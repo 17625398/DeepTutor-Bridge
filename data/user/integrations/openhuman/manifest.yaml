@@ -1,0 +1,50 @@
+name: "openhuma"
+version: "0.1.0"
+type: "integration"
+description: "OpenHuman (repo integration)"
+author: "third-party"
+compatible_version: ">= 1.0.0"
+ui:
+  title: "OpenHuman"
+  icon: "builtin:plug"
+  entry:
+    type: "link"
+    url: "http://127.0.0.1:1420"
+  nav:
+    group: "workspace"
+    order: 60
+    visible: true
+    open_in_new_tab: true
+
+dev:
+  auto_start: true
+  processes:
+    - name: "openhuma-mock-api"
+      cwd: "."
+      command: ["node", "scripts/mock-api-server.mjs", "--port", "18473"]
+      health_url: "http://127.0.0.1:18473/__admin/health"
+    - name: "openhuma-core"
+      cwd: "."
+      command:
+        [
+          "cargo",
+          "run",
+          "--bin",
+          "openhuman-core",
+          "--",
+          "run",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "7788"
+        ]
+      health_url: "http://127.0.0.1:7788/health"
+    - name: "openhuma-ui"
+      cwd: "."
+      command: ["pnpm", "dev"]
+      env:
+        HUSKY: "0"
+        OPENHUMAN_DEV_PORT: "1420"
+        VITE_BACKEND_URL: "http://127.0.0.1:18473"
+        VITE_OPENHUMAN_CORE_RPC_URL: "http://127.0.0.1:7788/rpc"
+      health_url: "http://127.0.0.1:1420"

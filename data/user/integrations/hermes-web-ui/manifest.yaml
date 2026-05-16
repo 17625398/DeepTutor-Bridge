@@ -1,0 +1,38 @@
+name: "hermes-web-ui"
+version: "0.5.24"
+type: "integration"
+description: "Hermes Web UI integration (upstream repo under data/user/integrations/hermes-web-ui)"
+author: "third-party"
+compatible_version: ">= 1.0.0"
+ui:
+  title: "Hermes Web UI"
+  icon: "builtin:plug"
+  entry:
+    type: "link"
+    url: "http://127.0.0.1:5173"
+  nav:
+    group: "workspace"
+    order: 55
+    visible: true
+    open_in_new_tab: true
+
+dev:
+  auto_start: true
+  processes:
+    - name: "hermes-web-ui-server"
+      cwd: "."
+      command: ["npm", "run", "dev:server"]
+      env:
+        PORT: "8648"
+        BIND_HOST: "127.0.0.1"
+        HERMES_HOME: ".hermes"
+        HERMES_WEB_UI_HOME: ".hermes-web-ui"
+      health_url: "http://127.0.0.1:8648/health"
+    - name: "hermes-web-ui-client"
+      cwd: "."
+      command: ["npm", "run", "dev:client", "--", "--port", "5173", "--host", "127.0.0.1"]
+      env:
+        HERMES_WEB_UI_HOME: ".hermes-web-ui"
+        HERMES_WEB_UI_BACKEND: "http://127.0.0.1:8648"
+        VITE_HERMES_BASE_URL: "http://127.0.0.1:8648"
+      health_url: "http://127.0.0.1:5173"
