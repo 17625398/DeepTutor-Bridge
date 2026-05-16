@@ -1,0 +1,29 @@
+name: "linkmind"
+version: "1.2.8"
+type: "integration"
+description: "LinkMind enterprise multimodal AI middleware integration"
+author: "third-party"
+compatible_version: ">= 1.0.0"
+
+ui:
+  title: "LinkMind"
+  icon: "builtin:plug"
+  entry:
+    type: "link"
+    url: "http://127.0.0.1:8080"
+  nav:
+    group: "workspace"
+    order: 65
+    visible: true
+    open_in_new_tab: true
+
+dev:
+  auto_start: true
+  processes:
+    - name: "linkmind-server"
+      cwd: "."
+      command: ["python", "tools/deeptutor_start.py"]
+      env:
+        LINKMIND_HOST: "127.0.0.1"
+        LINKMIND_PORT: "8080"
+      health_url: "http://127.0.0.1:8080"

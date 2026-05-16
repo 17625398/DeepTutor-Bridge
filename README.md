@@ -51,8 +51,8 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 
 | Metric | Current Summary |
 |:---|:---|
-| Fork-authored bridge/config files | `7` |
-| Vendored third-party repositories | `2` |
+| Fork-authored bridge/config files | `9` |
+| Vendored third-party repositories | `3` |
 | Main bridge entry files | [integrations.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/integrations.py), [SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx), [page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx), [start_web.py](file:///d:/Doubao/DeepTutor/scripts/start_web.py) |
 
 **1) First-party bridge layer added by this fork**
@@ -65,6 +65,8 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 | [SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | Frontend navigation | Fetch `/api/v1/integrations` and render integration entries in the sidebar menu | Fork-authored |
 | [page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx) | Frontend page | Render `/integrations/<name>` container pages | Fork-authored |
 | [start_web.py](file:///d:/Doubao/DeepTutor/scripts/start_web.py) | Runtime launcher | Start DeepTutor web services, auto-scan integration manifests, and auto-start configured third-party dev processes | Fork-authored |
+| [start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py) | Production launcher | Build frontend assets, start backend/frontend, and auto-start manifest-defined integrations in non-Docker production mode | Fork-authored |
+| [stop_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/stop_web_prod.py) | Production stop helper | Stop processes recorded by the non-Docker production launcher | Fork-authored |
 | [deeptutor_upgrade.py](file:///d:/Doubao/DeepTutor/scripts/deeptutor_upgrade.py) | Maintenance script | Upgrade helper for fork-side deployment workflows | Fork-authored |
 | [uv.lock](file:///d:/Doubao/DeepTutor/uv.lock) | Lockfile | Record Python dependency resolution state | Fork-added config |
 
@@ -73,6 +75,7 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 | Directory | Type | Integration Role | Key Entry | Approx. Added Files |
 |:---|:---|:---|:---|:---:|
 | [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui) | Vendored third-party repo | Integrated as a runtime web app under `data/user/integrations/hermes-web-ui` | [manifest.yaml](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui/manifest.yaml) | `415` |
+| [LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind) | Vendored third-party repo | Integrated as a Java-based runtime app under `data/user/integrations/LinkMind` | [manifest.yaml](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind/manifest.yaml) | `1302` |
 | [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) | Vendored third-party repo | Integrated as a runtime multi-process app under `data/user/integrations/openhuman` | [manifest.yaml](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman/manifest.yaml) | `2277` |
 
 **3) Directory mapping**
@@ -82,7 +85,7 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 | `deeptutor/` | [deeptutor/plugins/](file:///d:/Doubao/DeepTutor/deeptutor/plugins) and [integrations.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/integrations.py) | `data/user/integrations/*/manifest.yaml` |
 | `web/components/sidebar/` | [SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | Sidebar entries rendered from `/api/v1/integrations` results |
 | `web/app/(workspace)/` | [integrations/[name]/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx) | `/integrations/<name>` container page for third-party apps |
-| `data/user/` runtime layout | `data/user/integrations/` as the fork-owned extension root | [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui), [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) |
+| `data/user/` runtime layout | `data/user/integrations/` as the fork-owned extension root | [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui), [LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind), [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) |
 
 **4) Integration flow**
 
@@ -90,13 +93,14 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 2. [integrations.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/integrations.py) exposes the discovered integrations through `/api/v1/integrations`, detail endpoints, and probe endpoints.
 3. [SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) requests `/api/v1/integrations` and renders integration items into the main sidebar navigation.
 4. [page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx) opens the selected integration inside the unified DeepTutor workspace container route.
-5. The runtime target then points to a third-party app under [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui) or [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman), based on each integration manifest and startup settings.
+5. The runtime target then points to a third-party app under [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui), [LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind), or [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman), based on each integration manifest and startup settings.
 
 **5) Integrated third-party app inventory**
 
 | Integration | Directory | Entry URL | Auto-start | Notes |
 |:---|:---|:---|:---:|:---|
 | `hermes-web-ui` | [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui) | `http://127.0.0.1:5173` | Yes | Starts both UI and backend server; backend health target is `http://127.0.0.1:8648/health` |
+| `linkmind` | [LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind) | `http://127.0.0.1:8080` | Yes | Reuses `LinkMind.jar` when present; otherwise needs Maven to build `lagi-web/target/LinkMind.jar`, then runs the Java server in `server` mode |
 | `openhuma` | [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) | `http://127.0.0.1:1420` | Yes | Starts mock API, Rust core, and UI; core health target is `http://127.0.0.1:7788/health` |
 
 **6) Ownership and boundary notes**
@@ -645,15 +649,18 @@ docker compose down      # stop and remove container
 
 If you prefer to run DeepTutor directly on a VM, bare-metal host, or existing Python/Node.js server without Docker, deploy the backend and frontend as two separate long-running processes.
 
-> **Production boundary** — `python scripts/start_web.py` is still intended for local/development use. For non-Docker production deployments, run the FastAPI backend and the Next.js frontend separately as described below.
+> **Production boundary** — `python scripts/start_web.py` is still intended for local/development use. For non-Docker production deployments, use [start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py), which builds the frontend and starts both services with production settings.
 
-**1. Install backend dependencies**
+**1. Install backend and frontend dependencies**
 
 From the project root:
 
 ```bash
 python -m pip install -e ".[server]"
 cp .env.example .env
+cd web
+npm ci
+cd ..
 ```
 
 Edit `.env` before building the frontend:
@@ -668,30 +675,59 @@ NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8001
 
 If this host is public-facing, also set `AUTH_ENABLED=true` and review the production checklist below.
 
-**2. Start the backend with Uvicorn**
+**2. Start the non-Docker production stack**
 
-Activate your Python environment, stay in the project root, then run:
+From the project root:
 
 ```bash
-uvicorn deeptutor.api.main:app --host 0.0.0.0 --port 8001
+python scripts/start_web_prod.py --host 0.0.0.0
 ```
 
-Use the same port you set in `.env`. Add your preferred process manager (`systemd`, `supervisord`, NSSM, etc.) to keep the backend alive across reboots.
+The production launcher will:
 
-**3. Build and start the frontend**
+- validate backend/frontend ports and clean stale production state
+- install missing frontend dependencies if `web/node_modules` is absent
+- run `npm run build`
+- start the FastAPI backend with Uvicorn **without** auto-reload
+- start the Next.js frontend in production mode and prefer standalone output when available
+- auto-start integrations whose `manifest.yaml` sets `dev.auto_start: true`
 
-In a second terminal:
+Useful flags:
 
 ```bash
+# Reuse the last frontend build (faster restart after backend-only changes)
+python scripts/start_web_prod.py --skip-build
+
+# Force the standalone frontend server if you want the minimal Node runtime path
+python scripts/start_web_prod.py --frontend-mode standalone
+```
+
+**3. Stop the production stack**
+
+In another terminal:
+
+```bash
+python scripts/stop_web_prod.py
+```
+
+**4. Optional manual split-process mode**
+
+If you prefer to manage backend and frontend with separate system services, use the same `.env` values and run:
+
+```bash
+# Terminal 1 / backend
+uvicorn deeptutor.api.main:app --host 0.0.0.0 --port 8001 --log-level info --no-access-log
+
+# Terminal 2 / frontend
 cd web
-npm ci
 npm run build
-npm run start -- --hostname 0.0.0.0 --port 3782
+node .next/standalone/server.js
+# or: npm run start -- --hostname 0.0.0.0 --port 3782
 ```
 
-`NEXT_PUBLIC_API_BASE_EXTERNAL` is read during the frontend build, so re-run `npm run build` after changing that value or after frontend code changes.
+`NEXT_PUBLIC_API_BASE_EXTERNAL` is read during the frontend build, so re-run `python scripts/start_web_prod.py` without `--skip-build` after changing that value or after frontend code changes.
 
-**4. Put a reverse proxy in front (recommended)**
+**5. Put a reverse proxy in front (recommended)**
 
 For production, terminate HTTPS in Nginx, Caddy, Apache, or your cloud load balancer, then forward:
 
@@ -704,7 +740,7 @@ DeepTutor supports both a dedicated backend origin and a same-origin reverse-pro
 
 Use this checklist when exposing DeepTutor beyond localhost:
 
-- **Set a public backend URL** — add `NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8001` so browsers can reach the backend from outside the host. The frontend startup script applies this value at runtime, so a frontend rebuild is not required.
+- **Set a public backend URL** — add `NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8001` (or a same-origin `/api` path) so browsers can reach the backend from outside the host. Re-run `python scripts/start_web_prod.py` without `--skip-build` after changing it.
 - **Enable auth for public access** — DeepTutor ships with authentication disabled for localhost convenience. Set `AUTH_ENABLED=true` before exposing the app publicly, then follow the [Multi-User](#-multi-user--shared-deployments-with-per-user-workspaces) section for account provisioning and grants.
 - **Serve cookies securely over HTTPS** — set `AUTH_COOKIE_SECURE=true` when the site is served through HTTPS so auth cookies are marked `Secure`.
 - **Lock down browser origins** — for authenticated remote deployments, set `CORS_ORIGIN` or `CORS_ORIGINS` to the actual public frontend origin instead of relying on localhost defaults.

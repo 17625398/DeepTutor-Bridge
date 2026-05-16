@@ -51,8 +51,8 @@
 
 | 指标 | 当前汇总 |
 |:---|:---|
-| fork 自研桥接/配置文件数 | `7` |
-| 第三方 vendored 仓库数 | `2` |
+| fork 自研桥接/配置文件数 | `9` |
+| 第三方 vendored 仓库数 | `3` |
 | 主要入口文件 | [integrations.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/integrations.py)、[SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx)、[page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx)、[start_web.py](file:///d:/Doubao/DeepTutor/scripts/start_web.py) |
 
 **1）本 fork 自研的桥接层代码**
@@ -65,6 +65,8 @@
 | [SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | 前端导航 | 从 `/api/v1/integrations` 拉取数据并渲染侧栏集成菜单入口 | fork 自研 |
 | [page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx) | 前端页面 | 渲染 `/integrations/<name>` 集成容器页 | fork 自研 |
 | [start_web.py](file:///d:/Doubao/DeepTutor/scripts/start_web.py) | 运行时启动器 | 负责启动 DeepTutor Web 服务、自动扫描集成 manifest，并自动拉起已配置的第三方开发进程 | fork 自研 |
+| [start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py) | 生产启动器 | 负责构建前端生产资源，以非 Docker 方式启动前后端服务，并自动拉起 manifest 中声明的集成进程 | fork 自研 |
+| [stop_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/stop_web_prod.py) | 生产停止器 | 负责停止 `start_web_prod.py` 记录的生产进程 | fork 自研 |
 | [deeptutor_upgrade.py](file:///d:/Doubao/DeepTutor/scripts/deeptutor_upgrade.py) | 运维脚本 | 为 fork 侧部署提供升级辅助能力 | fork 自研 |
 | [uv.lock](file:///d:/Doubao/DeepTutor/uv.lock) | 锁文件 | 记录 Python 依赖解析结果 | fork 新增配置 |
 
@@ -73,6 +75,7 @@
 | 目录 | 类型 | 集成角色 | 关键入口 | 新增文件量级 |
 |:---|:---|:---|:---|:---:|
 | [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui) | 第三方 vendored 仓库 | 作为运行时 Web 应用接入 `data/user/integrations/hermes-web-ui` | [manifest.yaml](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui/manifest.yaml) | `415` |
+| [LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind) | 第三方 vendored 仓库 | 作为基于 Java 的运行时应用接入 `data/user/integrations/LinkMind` | [manifest.yaml](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind/manifest.yaml) | `1302` |
 | [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) | 第三方 vendored 仓库 | 作为运行时多进程应用接入 `data/user/integrations/openhuman` | [manifest.yaml](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman/manifest.yaml) | `2277` |
 
 **3）目录映射关系**
@@ -82,7 +85,7 @@
 | `deeptutor/` | [deeptutor/plugins/](file:///d:/Doubao/DeepTutor/deeptutor/plugins) 与 [integrations.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/integrations.py) | `data/user/integrations/*/manifest.yaml` |
 | `web/components/sidebar/` | [SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | 从 `/api/v1/integrations` 返回结果渲染侧栏菜单入口 |
 | `web/app/(workspace)/` | [integrations/[name]/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx) | 为第三方应用提供 `/integrations/<name>` 容器页 |
-| `data/user/` 运行时布局 | `data/user/integrations/` 作为 fork 自有扩展根目录 | [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui)、[openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) |
+| `data/user/` 运行时布局 | `data/user/integrations/` 作为 fork 自有扩展根目录 | [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui)、[LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind)、[openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) |
 
 **4）集成链路时序说明**
 
@@ -90,13 +93,14 @@
 2. [integrations.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/integrations.py) 将发现结果通过 `/api/v1/integrations`、详情接口与探测接口暴露给前端。
 3. [SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) 请求 `/api/v1/integrations`，并把集成项渲染到主侧栏导航中。
 4. [page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx) 在统一的 DeepTutor 工作区容器路由中打开被选中的集成。
-5. 最终运行时目标会指向 [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui) 或 [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) 这类第三方应用目录，具体由各自的 manifest 与启动配置决定。
+5. 最终运行时目标会指向 [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui)、[LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind) 或 [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) 这类第三方应用目录，具体由各自的 manifest 与启动配置决定。
 
 **5）第三方集成清单表**
 
 | 集成名 | 目录 | 入口地址 | 是否自动拉起 | 备注 |
 |:---|:---|:---|:---:|:---|
 | `hermes-web-ui` | [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui) | `http://127.0.0.1:5173` | 是 | 同时拉起前端和后端服务；后端健康检查地址为 `http://127.0.0.1:8648/health` |
+| `linkmind` | [LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind) | `http://127.0.0.1:8080` | 是 | 若已有 `LinkMind.jar` 会直接复用；否则需要 Maven 构建 `lagi-web/target/LinkMind.jar`，随后以 `server` 模式启动 Java 服务 |
 | `openhuma` | [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) | `http://127.0.0.1:1420` | 是 | 同时拉起 mock API、Rust core 与前端；core 健康检查地址为 `http://127.0.0.1:7788/health` |
 
 **6）归属与边界说明**
@@ -651,15 +655,18 @@ docker compose down      # 停止并移除容器
 
 如果你希望在云主机、物理机或已有 Python / Node.js 环境中直接部署 DeepTutor，而不使用 Docker，可以把后端和前端作为两个独立的长期进程运行。
 
-> **生产边界说明** — `python scripts/start_web.py` 仍然只适用于本地/开发场景。对于非 Docker 的生产部署，请按下面方式分别启动 FastAPI 后端与 Next.js 前端。
+> **生产边界说明** — `python scripts/start_web.py` 仍然只适用于本地/开发场景。对于非 Docker 的生产部署，请改用 [start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py)，它会按生产模式构建前端并启动前后端服务。
 
-**1. 安装后端依赖**
+**1. 安装后端与前端依赖**
 
 在项目根目录执行：
 
 ```bash
 python -m pip install -e ".[server]"
 cp .env.example .env
+cd web
+npm ci
+cd ..
 ```
 
 在构建前端之前，先编辑 `.env`：
@@ -674,30 +681,59 @@ NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8001
 
 如果该主机对公网开放，也请同时设置 `AUTH_ENABLED=true`，并继续阅读下方“生产部署注意事项”。
 
-**2. 使用 Uvicorn 启动后端**
+**2. 启动非 Docker 生产栈**
 
-激活你的 Python 环境，并保持当前目录为项目根目录：
+在项目根目录执行：
 
 ```bash
-uvicorn deeptutor.api.main:app --host 0.0.0.0 --port 8001
+python scripts/start_web_prod.py --host 0.0.0.0
 ```
 
-这里的端口应与你在 `.env` 中设置的值保持一致。生产环境建议配合 `systemd`、`supervisord`、NSSM 等进程管理器，保证后端在重启后自动恢复。
+这个生产启动器会自动完成以下工作：
 
-**3. 构建并启动前端**
+- 校验前后端端口，并清理上一次残留的生产状态
+- 如果缺少 `web/node_modules`，自动安装前端依赖
+- 执行 `npm run build`
+- 以 **无 auto-reload** 的方式启动 FastAPI + Uvicorn
+- 以 Next.js 生产模式启动前端，优先使用 standalone 产物
+- 自动拉起 `manifest.yaml` 中配置了 `dev.auto_start: true` 的集成
 
-在第二个终端中执行：
+常用参数：
 
 ```bash
+# 后端代码未变时，复用上次前端构建结果
+python scripts/start_web_prod.py --skip-build
+
+# 强制使用 Next.js standalone 服务
+python scripts/start_web_prod.py --frontend-mode standalone
+```
+
+**3. 停止生产栈**
+
+在另一个终端执行：
+
+```bash
+python scripts/stop_web_prod.py
+```
+
+**4. 可选：手动拆分前后端进程**
+
+如果你希望将前后端分别交给 `systemd`、`supervisord`、NSSM 等进程管理器托管，也可以基于同一份 `.env` 手动运行：
+
+```bash
+# 终端 1 / 后端
+uvicorn deeptutor.api.main:app --host 0.0.0.0 --port 8001 --log-level info --no-access-log
+
+# 终端 2 / 前端
 cd web
-npm ci
 npm run build
-npm run start -- --hostname 0.0.0.0 --port 3782
+node .next/standalone/server.js
+# 或：npm run start -- --hostname 0.0.0.0 --port 3782
 ```
 
-`NEXT_PUBLIC_API_BASE_EXTERNAL` 会在前端构建阶段读取，因此每次修改该值，或修改前端代码后，都需要重新执行 `npm run build`。
+`NEXT_PUBLIC_API_BASE_EXTERNAL` 会在前端构建阶段读取，因此每次修改该值，或修改前端代码后，都需要重新执行 `python scripts/start_web_prod.py`，且不要带 `--skip-build`。
 
-**4. 建议放在反向代理后面**
+**5. 建议放在反向代理后面**
 
 生产环境推荐由 Nginx、Caddy、Apache 或云负载均衡来终止 HTTPS，然后转发：
 
@@ -710,7 +746,7 @@ DeepTutor 同时支持“独立后端域名/端口”和“同域名反向代理
 
 将 DeepTutor 暴露到 localhost 之外时，请按以下清单检查：
 
-- **设置后端公网地址** — 添加 `NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8001`，让浏览器能够从主机外访问后端。前端启动脚本会在运行时应用该值，无需重建前端。
+- **设置后端公网地址** — 添加 `NEXT_PUBLIC_API_BASE_EXTERNAL=https://your-server.com:8001`（或同域 `/api` 路径），让浏览器能够从主机外访问后端。修改后请重新执行一次 `python scripts/start_web_prod.py`，且不要带 `--skip-build`。
 - **公网访问前启用认证** — DeepTutor 默认为了 localhost 便利而关闭认证。对公网开放前请设置 `AUTH_ENABLED=true`，并参考下方 [多用户](#multi-user) 章节完成账号初始化与资源授权。
 - **通过 HTTPS 安全传递 Cookie** — 当站点通过 HTTPS 提供服务时，请设置 `AUTH_COOKIE_SECURE=true`，让认证 Cookie 带上 `Secure` 标记。
 - **收紧浏览器来源** — 对于启用认证的远程部署，请设置 `CORS_ORIGIN` 或 `CORS_ORIGINS` 为实际的公网前端来源，而不要依赖 localhost 默认值。

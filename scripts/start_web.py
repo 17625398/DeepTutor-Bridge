@@ -496,15 +496,17 @@ def _terminate_state_processes(state: dict[str, Any]) -> None:
                 pass
 
 
-def stop_recorded_processes(language: str | None = None) -> bool:
+def stop_recorded_processes(
+    language: str | None = None, *, state_path: Path = STATE_PATH
+) -> bool:
     settings = load_launch_settings(PROJECT_ROOT)
     lang = language or settings.language
-    state = _read_state()
+    state = _read_state(state_path)
     if state is None:
         log_info(_t(lang, "state_missing"))
         return False
     _terminate_state_processes(state)
-    _remove_state()
+    _remove_state(state_path)
     log_success(_t(lang, "state_stopped"))
     return True
 
@@ -581,8 +583,10 @@ def _state_has_live_process(state: dict[str, Any]) -> bool:
     return any(_is_pid_alive(pid) for pid, _pgid in _state_process_records(state))
 
 
-def _cleanup_previous_launch_if_safe(ports: dict[str, int], language: str) -> None:
-    state = _read_state()
+def _cleanup_previous_launch_if_safe(
+    ports: dict[str, int], language: str, *, state_path: Path = STATE_PATH
+) -> None:
+    state = _read_state(state_path)
     if state is None:
         return
 
@@ -598,24 +602,30 @@ def _cleanup_previous_launch_if_safe(ports: dict[str, int], language: str) -> No
     ):
         log_warn(_t(language, "cleanup_previous"))
         _terminate_state_processes(state)
-        _remove_state()
+        _remove_state(state_path)
         return
     if not conflicts and _state_has_live_process(state):
         log_warn(_t(language, "cleanup_previous"))
         _terminate_state_processes(state)
-        _remove_state()
+        _remove_state(state_path)
         return
     if not conflicts and not _state_has_live_process(state):
-        _remove_state()
+        _remove_state(state_path)
 
 
-def _ensure_ports_available(backend_port: int, frontend_port: int, language: str) -> None:
+def _ensure_ports_available(
+    backend_port: int,
+    frontend_port: int,
+    language: str,
+    *,
+    state_path: Path = STATE_PATH,
+) -> None:
     ports = {
         _t(language, "backend"): backend_port,
         _t(language, "frontend"): frontend_port,
     }
     state_ports = {"backend": backend_port, "frontend": frontend_port}
-    _cleanup_previous_launch_if_safe(state_ports, language)
+    _cleanup_previous_launch_if_safe(state_ports, language, state_path=state_path)
 
     conflicts = _collect_port_conflicts(ports)
     if not conflicts:
