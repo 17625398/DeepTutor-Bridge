@@ -105,6 +105,7 @@ cache/
 **/cache/
 .cache/
 .ruff_cache
+.npm-cache/
 
 # Log files
 *.log
@@ -122,6 +123,7 @@ cache/
 
 # Cursor
 .cursor/
+.trae/
 
 # PyCharm / IntelliJ IDEA
 .idea/
