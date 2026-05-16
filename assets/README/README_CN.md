@@ -53,7 +53,7 @@
 |:---|:---|
 | fork 自研桥接/配置文件数 | `7` |
 | 第三方 vendored 仓库数 | `2` |
-| 主要入口文件 | [integrations.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/integrations.py)、[SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx)、[page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx) |
+| 主要入口文件 | [integrations.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/integrations.py)、[SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx)、[page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx)、[start_web.py](file:///d:/Doubao/DeepTutor/scripts/start_web.py) |
 
 **1）本 fork 自研的桥接层代码**
 
@@ -64,6 +64,7 @@
 | [__init__.py](file:///d:/Doubao/DeepTutor/deeptutor/plugins/__init__.py) | 包入口 | 暴露 `deeptutor.plugins` 包 | fork 自研 |
 | [SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | 前端导航 | 从 `/api/v1/integrations` 拉取数据并渲染侧栏集成菜单入口 | fork 自研 |
 | [page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx) | 前端页面 | 渲染 `/integrations/<name>` 集成容器页 | fork 自研 |
+| [start_web.py](file:///d:/Doubao/DeepTutor/scripts/start_web.py) | 运行时启动器 | 负责启动 DeepTutor Web 服务、自动扫描集成 manifest，并自动拉起已配置的第三方开发进程 | fork 自研 |
 | [deeptutor_upgrade.py](file:///d:/Doubao/DeepTutor/scripts/deeptutor_upgrade.py) | 运维脚本 | 为 fork 侧部署提供升级辅助能力 | fork 自研 |
 | [uv.lock](file:///d:/Doubao/DeepTutor/uv.lock) | 锁文件 | 记录 Python 依赖解析结果 | fork 新增配置 |
 

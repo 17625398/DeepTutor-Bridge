@@ -53,7 +53,7 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 |:---|:---|
 | Fork-authored bridge/config files | `7` |
 | Vendored third-party repositories | `2` |
-| Main bridge entry files | [integrations.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/integrations.py), [SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx), [page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx) |
+| Main bridge entry files | [integrations.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/integrations.py), [SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx), [page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx), [start_web.py](file:///d:/Doubao/DeepTutor/scripts/start_web.py) |
 
 **1) First-party bridge layer added by this fork**
 
@@ -64,6 +64,7 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 | [__init__.py](file:///d:/Doubao/DeepTutor/deeptutor/plugins/__init__.py) | Package entry | Expose the `deeptutor.plugins` package | Fork-authored |
 | [SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | Frontend navigation | Fetch `/api/v1/integrations` and render integration entries in the sidebar menu | Fork-authored |
 | [page.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/integrations/[name]/page.tsx) | Frontend page | Render `/integrations/<name>` container pages | Fork-authored |
+| [start_web.py](file:///d:/Doubao/DeepTutor/scripts/start_web.py) | Runtime launcher | Start DeepTutor web services, auto-scan integration manifests, and auto-start configured third-party dev processes | Fork-authored |
 | [deeptutor_upgrade.py](file:///d:/Doubao/DeepTutor/scripts/deeptutor_upgrade.py) | Maintenance script | Upgrade helper for fork-side deployment workflows | Fork-authored |
 | [uv.lock](file:///d:/Doubao/DeepTutor/uv.lock) | Lockfile | Record Python dependency resolution state | Fork-added config |
 
