@@ -266,6 +266,7 @@ app.mount(
 # Some router modules load YAML settings at import time.
 from deeptutor.api.routers import (
     agent_config,
+    app_config,
     attachments,
     auth,
     book,
@@ -287,15 +288,11 @@ from deeptutor.api.routers import (
     tutorbot,
     unified_ws,
     vision_solver,
-    app_config,
 )
 from deeptutor.multi_user.router import router as multi_user_router  # noqa: E402
 
 # Auth router is public — login/logout/register/status require no token
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-
-# App config is public — frontend needs app_name before auth
-app.include_router(app_config.router, prefix="/api/v1/config", tags=["config"])
 
 # All other routers require a valid session when AUTH_ENABLED=true.
 # require_auth is a no-op when AUTH_ENABLED=false, so this is safe for local use.
@@ -344,9 +341,6 @@ app.include_router(
 app.include_router(skills.router, prefix="/api/v1/skills", tags=["skills"], dependencies=_auth)
 app.include_router(system.router, prefix="/api/v1/system", tags=["system"], dependencies=_auth)
 app.include_router(
-    integrations.router, prefix="/api/v1", tags=["integrations"], dependencies=_auth
-)
-app.include_router(
     plugins_api.router, prefix="/api/v1/plugins", tags=["plugins"], dependencies=_auth
 )
 app.include_router(
@@ -363,6 +357,16 @@ app.include_router(
     prefix="/api/attachments",
     tags=["attachments"],
     dependencies=_auth,
+)
+
+# Application config — public endpoint for frontend runtime configuration
+app.include_router(
+    app_config.router, prefix="/api/v1/config", tags=["config"]
+)
+
+# Integrations — public endpoint for third-party integration discovery
+app.include_router(
+    integrations.router, prefix="/api/v1", tags=["integrations"]
 )
 
 # Unified WebSocket endpoint — auth is checked inside the handler (WebSockets

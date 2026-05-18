@@ -5,6 +5,8 @@ import { resolveBase } from "@/lib/api";
 
 interface AppConfig {
   app_name: string;
+  logo_url: string;
+  background_url: string;
 }
 
 const AppConfigContext = createContext<AppConfig | null>(null);
@@ -24,7 +26,7 @@ async function fetchAppConfig(): Promise<AppConfig> {
       return data;
     })
     .catch(() => {
-      _cachedConfig = { app_name: "DeepTutor" };
+      _cachedConfig = { app_name: "DeepTutor", logo_url: "/logo-ver2.png", background_url: "" };
       _fetchPromise = null;
       return _cachedConfig;
     });
@@ -35,12 +37,18 @@ async function fetchAppConfig(): Promise<AppConfig> {
 export function AppConfigProvider({
   children,
   initialAppName,
+  initialLogoUrl,
+  initialBackgroundUrl,
 }: {
   children: React.ReactNode;
   initialAppName?: string;
+  initialLogoUrl?: string;
+  initialBackgroundUrl?: string;
 }) {
   const [config, setConfig] = useState<AppConfig>({
     app_name: initialAppName ?? "DeepTutor",
+    logo_url: initialLogoUrl ?? "/logo-ver2.png",
+    background_url: initialBackgroundUrl ?? "",
   });
 
   useEffect(() => {
@@ -56,5 +64,5 @@ export function AppConfigProvider({
 
 export function useAppConfig(): AppConfig {
   const ctx = useContext(AppConfigContext);
-  return ctx ?? { app_name: "DeepTutor" };
+  return ctx ?? { app_name: "DeepTutor", logo_url: "/logo-ver2.png", background_url: "" };
 }

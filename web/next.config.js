@@ -99,10 +99,19 @@ const nextConfig = {
     NEXT_PUBLIC_AUTH_ENABLED,
   },
 
-  // Allow accessing the dev server from loopback variants like 127.0.0.1.
-  // This keeps client-side sidebar data loading working when the app is
-  // opened via http://127.0.0.1:<port> instead of http://localhost:<port>.
-  allowedDevOrigins: ["127.0.0.1"],
+  // Image optimization configuration
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+      {
+        protocol: "http",
+        hostname: "**",
+      },
+    ],
+  },
 
   // Standalone output: self-contained server.js + minimal node_modules
   // This eliminates the need to copy the full node_modules into Docker production images

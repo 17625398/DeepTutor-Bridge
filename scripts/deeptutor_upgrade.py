@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import time
@@ -12,8 +13,59 @@ import urllib.request
 import zipfile
 
 
+MIN_PYTHON_VERSION = (3, 11)
+MIN_DISK_SPACE_MB = 500
+UPGRADE_HISTORY_FILE = Path(__file__).resolve().parent.parent / "data" / "user" / "upgrade_history.json"
+
+
 def _now_stamp() -> str:
     return time.strftime("%Y%m%d-%H%M%S", time.localtime())
+
+
+def _check_python_version() -> bool:
+    current = sys.version_info[:2]
+    if current < MIN_PYTHON_VERSION:
+        print(
+            f"Python {MIN_PYTHON_VERSION[0]}.{MIN_PYTHON_VERSION[1]}+ required, "
+            f"but found {current[0]}.{current[1]}"
+        )
+        return False
+    return True
+
+
+def _check_disk_space(path: Path, required_mb: int = MIN_DISK_SPACE_MB) -> bool:
+    try:
+        usage = shutil.disk_usage(str(path))
+        available_mb = usage.free // (1024 * 1024)
+        if available_mb < required_mb:
+            print(
+                f"Insufficient disk space: {available_mb} MB available, "
+                f"{required_mb} MB required"
+            )
+            return False
+        return True
+    except OSError:
+        print("Could not check disk space (non-fatal)")
+        return True
+
+
+def _check_pip_available() -> bool:
+    result = _run([sys.executable, "-m", "pip", "--version"], check=False)
+    if result.returncode != 0:
+        print("pip is not available")
+        return False
+    return True
+
+
+def preflight_checks(repo: Path, *, mode: str) -> int:
+    if not _check_python_version():
+        return 1
+    if not _check_disk_space(repo):
+        return 1
+    if mode in ("pip", "auto") and not _check_pip_available():
+        return 1
+    print("Preflight checks passed.")
+    return 0
 
 
 def _run(cmd: list[str], *, cwd: Path | None = None, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -128,8 +180,55 @@ def _default_data_dir(repo: Path) -> Path:
     return repo / "data"
 
 
-def _iter_backup_entries(data_dir: Path, *, include_kb: bool, include_logs: bool) -> list[Path]:
+FORKED_CORE_FILES = [
+    "deeptutor/api/routers/integrations.py",
+    "deeptutor/plugins/loader.py",
+    "deeptutor/plugins/__init__.py",
+    "web/components/sidebar/SidebarShell.tsx",
+    "web/app/integrations/[name]/page.tsx",
+    "scripts/start_web.py",
+    "deeptutor/api/main.py",
+]
+
+
+def _get_forked_core_files(repo: Path) -> list[Path]:
+    modified = []
+    for rel_path in FORKED_CORE_FILES:
+        filepath = repo / rel_path
+        if filepath.exists():
+            modified.append(filepath)
+    return modified
+
+
+def _get_modified_files(repo: Path) -> list[Path]:
+    if not _is_git_checkout(repo):
+        return []
+
+    result = _git(["diff", "--name-only", "HEAD"], repo, check=False)
+    if result.returncode != 0:
+        return []
+
+    modified = []
+    for line in result.stdout.strip().splitlines():
+        if line.strip():
+            filepath = repo / line.strip()
+            if filepath.exists():
+                modified.append(filepath)
+    return modified
+
+
+def _iter_backup_entries(
+    repo: Path,
+    data_dir: Path,
+    *,
+    include_kb: bool,
+    include_logs: bool,
+    include_config: bool,
+    include_plugins: bool,
+    include_modified: bool,
+) -> list[Path]:
     entries: list[Path] = []
+
     settings_dir = data_dir / "user" / "settings"
     if settings_dir.exists():
         entries.append(settings_dir)
@@ -148,27 +247,110 @@ def _iter_backup_entries(data_dir: Path, *, include_kb: bool, include_logs: bool
         if logs_dir.exists():
             entries.append(logs_dir)
 
+    if include_config:
+        env_file = repo / ".env"
+        if env_file.exists():
+            entries.append(env_file)
+
+        env_example = repo / ".env.example"
+        if env_example.exists():
+            entries.append(env_example)
+
+        config_dir = repo / "data" / "user" / "config"
+        if config_dir.exists():
+            entries.append(config_dir)
+
+        multi_user_dir = repo / "multi-user"
+        if multi_user_dir.exists():
+            entries.append(multi_user_dir)
+
+    if include_plugins:
+        plugins_dir = repo / "deeptutor" / "plugins"
+        if plugins_dir.exists():
+            entries.append(plugins_dir)
+
+        integrations_dir = repo / "data" / "user" / "integrations"
+        if integrations_dir.exists():
+            entries.append(integrations_dir)
+
+    if include_modified:
+        modified_files = _get_modified_files(repo)
+        entries.extend(modified_files)
+
+        forked_files = _get_forked_core_files(repo)
+        entries.extend(forked_files)
+
     return entries
 
 
+BACKUP_EXCLUDE_PATTERNS = [
+    "node_modules",
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".git",
+    ".next",
+    "dist",
+    "build",
+    "packages",
+    "backend-prod",
+    "frontend-prod",
+    "*.pyc",
+    "*.pyo",
+    "*.whl",
+    "*.tar.gz",
+    ".trae",
+    ".vscode",
+    ".idea",
+]
+
+
+def _should_exclude(entry: Path) -> bool:
+    name = entry.name
+    if name in BACKUP_EXCLUDE_PATTERNS:
+        return True
+    if entry.suffix == ".pyc":
+        return True
+    return False
+
+
 def _zip_add_path(zf: zipfile.ZipFile, base_dir: Path, entry: Path) -> None:
+    try:
+        rel = entry.relative_to(base_dir)
+    except ValueError:
+        rel = Path(entry.name)
+
     if entry.is_dir():
+        if _should_exclude(entry):
+            return
         for file in entry.rglob("*"):
-            if file.is_file():
-                arcname = str(file.relative_to(base_dir))
+            if file.is_file() and not _should_exclude(file):
+                try:
+                    arcname = str(file.relative_to(base_dir))
+                except ValueError:
+                    arcname = str(rel / file.relative_to(entry))
                 zf.write(file, arcname=arcname)
         return
     if entry.is_file():
-        arcname = str(entry.relative_to(base_dir))
+        if _should_exclude(entry):
+            return
+        try:
+            arcname = str(entry.relative_to(base_dir))
+        except ValueError:
+            arcname = str(rel)
         zf.write(entry, arcname=arcname)
 
 
 def backup_data(
+    repo: Path,
     data_dir: Path,
     *,
     out_dir: Path,
     include_kb: bool,
     include_logs: bool,
+    include_config: bool = True,
+    include_plugins: bool = True,
+    include_modified: bool = True,
 ) -> Path:
     base_dir = data_dir.resolve()
     if not base_dir.exists():
@@ -177,7 +359,15 @@ def backup_data(
     out_dir.mkdir(parents=True, exist_ok=True)
     archive_path = (out_dir / f"deeptutor-backup-{_now_stamp()}.zip").resolve()
 
-    entries = _iter_backup_entries(base_dir, include_kb=include_kb, include_logs=include_logs)
+    entries = _iter_backup_entries(
+        repo,
+        base_dir,
+        include_kb=include_kb,
+        include_logs=include_logs,
+        include_config=include_config,
+        include_plugins=include_plugins,
+        include_modified=include_modified,
+    )
     if not entries:
         raise RuntimeError(f"No backup targets found under: {base_dir}")
 
@@ -186,6 +376,88 @@ def backup_data(
             _zip_add_path(zf, base_dir, entry)
 
     return archive_path
+
+
+def rollback(backup_file: Path, *, repo: Path, assume_yes: bool) -> int:
+    if not backup_file.exists():
+        print(f"Backup file not found: {backup_file}")
+        return 1
+
+    if not assume_yes:
+        print(f"Rolling back from: {backup_file}")
+        print("This will overwrite your current data with the backup.")
+        return 1
+
+    data_dir = _default_data_dir(repo)
+    print(f"Extracting backup to: {data_dir}")
+
+    with zipfile.ZipFile(backup_file, "r") as zf:
+        zf.extractall(str(data_dir))
+
+    print("Rollback completed successfully.")
+    return 0
+
+
+def list_backups(out_dir: Path) -> int:
+    if not out_dir.exists():
+        print(f"No backup directory found: {out_dir}")
+        return 0
+
+    backups = sorted(out_dir.glob("deeptutor-backup-*.zip"), reverse=True)
+    if not backups:
+        print("No backups found.")
+        return 0
+
+    print(f"Found {len(backups)} backup(s):")
+    for bp in backups:
+        size_mb = bp.stat().st_size / (1024 * 1024)
+        print(f"  {bp.name} ({size_mb:.1f} MB)")
+    return 0
+
+
+def _load_upgrade_history() -> list[dict]:
+    if UPGRADE_HISTORY_FILE.exists():
+        try:
+            with open(UPGRADE_HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return []
+    return []
+
+
+def _save_upgrade_history(history: list[dict]) -> None:
+    UPGRADE_HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(UPGRADE_HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=2, ensure_ascii=False)
+
+
+def record_upgrade(mode: str, source_version: str | None, target_version: str | None, status: str) -> None:
+    history = _load_upgrade_history()
+    history.append({
+        "timestamp": _now_stamp(),
+        "mode": mode,
+        "from_version": source_version,
+        "to_version": target_version,
+        "status": status,
+    })
+    _save_upgrade_history(history)
+
+
+def show_upgrade_history() -> int:
+    history = _load_upgrade_history()
+    if not history:
+        print("No upgrade history found.")
+        return 0
+
+    print("Upgrade History:")
+    print("-" * 60)
+    for entry in history:
+        print(
+            f"  [{entry['timestamp']}] {entry['mode']:4s} | "
+            f"{entry.get('from_version', '?'):12s} → {entry.get('to_version', '?'):12s} | "
+            f"{entry['status']}"
+        )
+    return 0
 
 
 def http_get_json(url: str, *, timeout_s: float = 5.0, headers: dict[str, str] | None = None) -> dict:
@@ -281,9 +553,45 @@ def upgrade_pip(pip_spec: str) -> int:
     return completed.returncode
 
 
+def post_install_cleanup(repo: Path) -> int:
+    print("Running post-installation cleanup...")
+    
+    pycache_dirs = list(repo.rglob("__pycache__"))
+    for d in pycache_dirs:
+        try:
+            shutil.rmtree(d, ignore_errors=True)
+        except OSError:
+            pass
+    
+    print(f"Cleaned {len(pycache_dirs)} __pycache__ directories.")
+    return 0
+
+
+def restart_services(base_url: str, *, auth_token: str | None = None) -> int:
+    print("Checking for running services...")
+    
+    try:
+        result = _run(
+            [sys.executable, "-c", 
+             "import subprocess; subprocess.run(['tasklist'], capture_output=True, text=True)"],
+            check=False
+        )
+        if "deeptutor" in result.stdout.lower() or "uvicorn" in result.stdout.lower():
+            print("Found running DeepTutor processes. Please restart manually.")
+            return 0
+    except Exception:
+        pass
+    
+    print("No running services detected.")
+    return 0
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(prog="deeptutor-upgrade")
-    sub = parser.add_subparsers(dest="command", required=True)
+    parser = argparse.ArgumentParser(
+        prog="deeptutor-upgrade",
+        description="DeepTutor upgrade management tool",
+    )
+    sub = parser.add_subparsers(dest="command")
 
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--repo", type=Path, default=_default_repo())
@@ -298,6 +606,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     cmd_backup.add_argument("--out-dir", type=Path, default=Path.cwd() / "deeptutor_backups")
     cmd_backup.add_argument("--include-kb", action="store_true")
     cmd_backup.add_argument("--include-logs", action="store_true")
+    cmd_backup.add_argument("--include-config", action="store_true", default=True)
+    cmd_backup.add_argument("--no-config", action="store_false", dest="include_config")
+    cmd_backup.add_argument("--include-plugins", action="store_true", default=True)
+    cmd_backup.add_argument("--no-plugins", action="store_false", dest="include_plugins")
+    cmd_backup.add_argument("--include-modified", action="store_true", default=True)
+    cmd_backup.add_argument("--no-modified", action="store_false", dest="include_modified")
 
     cmd_health = sub.add_parser("healthcheck")
     cmd_health.add_argument("--base-url", default=os.environ.get("DEEPTUTOR_BASE_URL", "http://127.0.0.1:8001"))
@@ -313,11 +627,32 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     cmd_upgrade.add_argument("--backup-out-dir", type=Path, default=Path.cwd() / "deeptutor_backups")
     cmd_upgrade.add_argument("--include-kb", action="store_true")
     cmd_upgrade.add_argument("--include-logs", action="store_true")
+    cmd_upgrade.add_argument("--include-config", action="store_true", default=True)
+    cmd_upgrade.add_argument("--no-config", action="store_false", dest="include_config")
+    cmd_upgrade.add_argument("--include-plugins", action="store_true", default=True)
+    cmd_upgrade.add_argument("--no-plugins", action="store_false", dest="include_plugins")
+    cmd_upgrade.add_argument("--include-modified", action="store_true", default=True)
+    cmd_upgrade.add_argument("--no-modified", action="store_false", dest="include_modified")
     cmd_upgrade.add_argument("--healthcheck", action="store_true")
     cmd_upgrade.add_argument("--base-url", default=os.environ.get("DEEPTUTOR_BASE_URL", "http://127.0.0.1:8001"))
     cmd_upgrade.add_argument("--auth-token", default=os.environ.get("DEEPTUTOR_AUTH_TOKEN"))
+    cmd_upgrade.add_argument("--preflight", action="store_true", default=True)
+    cmd_upgrade.add_argument("--post-install", action="store_true", default=True)
 
-    return parser.parse_args(argv)
+    cmd_rollback = sub.add_parser("rollback", parents=[common])
+    cmd_rollback.add_argument("--backup-file", type=Path, required=True)
+    cmd_rollback.add_argument("--yes", "-y", action="store_true")
+
+    cmd_list_backups = sub.add_parser("list-backups")
+    cmd_list_backups.add_argument("--out-dir", type=Path, default=Path.cwd() / "deeptutor_backups")
+
+    cmd_history = sub.add_parser("history")
+
+    args = parser.parse_args(argv)
+    if args.command is None:
+        parser.print_help()
+        raise SystemExit(0)
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -330,18 +665,31 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "healthcheck":
             return healthcheck(args.base_url, auth_token=args.auth_token)
 
+        if args.command == "list-backups":
+            return list_backups(args.out_dir)
+
+        if args.command == "history":
+            return show_upgrade_history()
+
         repo: Path = args.repo.resolve()
 
         if args.command == "backup":
             data_dir = (args.data_dir or _default_data_dir(repo)).resolve()
             archive = backup_data(
+                repo,
                 data_dir,
                 out_dir=args.out_dir.resolve(),
                 include_kb=args.include_kb,
                 include_logs=args.include_logs,
+                include_config=args.include_config,
+                include_plugins=args.include_plugins,
+                include_modified=args.include_modified,
             )
             print(str(archive))
             return 0
+
+        if args.command == "rollback":
+            return rollback(args.backup_file, repo=repo, assume_yes=args.yes)
 
         if args.command == "dry-run":
             mode = args.mode
@@ -361,13 +709,24 @@ def main(argv: list[str] | None = None) -> int:
             if mode == "auto":
                 mode = "git" if _is_git_checkout(repo) else "pip"
 
+            if args.preflight:
+                preflight = preflight_checks(repo, mode=mode)
+                if preflight != 0:
+                    return preflight
+
+            before_version = _installed_version("deeptutor")
+
             if args.backup:
                 data_dir = (args.data_dir or _default_data_dir(repo)).resolve()
                 archive = backup_data(
+                    repo,
                     data_dir,
                     out_dir=args.backup_out_dir.resolve(),
                     include_kb=args.include_kb,
                     include_logs=args.include_logs,
+                    include_config=args.include_config,
+                    include_plugins=args.include_plugins,
+                    include_modified=args.include_modified,
                 )
                 print("Backup created:", str(archive))
 
@@ -377,20 +736,32 @@ def main(argv: list[str] | None = None) -> int:
                     return preflight
                 code = upgrade_git(repo, assume_yes=args.yes, remote=args.remote)
             else:
-                before = _installed_version("deeptutor")
-                print("Installed before:", before or "not installed")
+                print("Installed before:", before_version or "not installed")
                 code = upgrade_pip(args.pip_spec)
-                after = _installed_version("deeptutor")
-                print("Installed after :", after or "not installed")
+                after_version = _installed_version("deeptutor")
+                print("Installed after :", after_version or "not installed")
+
+                record_upgrade(
+                    mode="pip",
+                    source_version=before_version,
+                    target_version=after_version,
+                    status="success" if code == 0 else "failed",
+                )
 
             if code != 0:
                 return code
+
+            if args.post_install:
+                post_install_cleanup(repo)
 
             if args.healthcheck:
                 hc = healthcheck(args.base_url, auth_token=args.auth_token)
                 if hc != 0:
                     return hc
 
+            restart_services(args.base_url, auth_token=args.auth_token)
+
+            print("Upgrade completed successfully.")
             return 0
 
         return 2

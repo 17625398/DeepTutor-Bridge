@@ -3,21 +3,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useAppShell } from "@/context/AppShellContext";
 import { useAppConfig } from "@/context/AppConfigContext";
 import {
   BookOpen,
   Bot,
+  ExternalLink,
   Github,
   LayoutGrid,
-  Plug,
   Library,
   MessageSquare,
   PanelLeftClose,
   PanelLeftOpen,
   PenLine,
   Plus,
+  Search,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -27,7 +28,54 @@ import { TutorBotRecent } from "@/components/sidebar/TutorBotRecent";
 import { VersionBadge } from "@/components/sidebar/VersionBadge";
 import type { SessionSummary } from "@/lib/session-api";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { apiFetch, apiUrl } from "@/lib/api";
+import { apiUrl } from "@/lib/api";
+
+interface IntegrationItem {
+  name: string;
+  type: string;
+  description: string;
+  version: string;
+  author: string;
+  ui?: {
+    title?: string;
+    icon?: string;
+    entry?: { type?: "link" | "iframe"; url?: string };
+    nav?: { group?: string; order?: number; visible?: boolean; open_in_new_tab?: boolean };
+  };
+  nav?: { group?: string; order?: number; visible?: boolean };
+}
+
+const INTEGRATION_ICON_MAP: Record<string, LucideIcon> = {
+  "builtin:plug": ExternalLink,
+  "builtin:search": Search,
+};
+const DEFAULT_INTEGRATION_ICON = ExternalLink;
+
+function getIntegrationIcon(integration: IntegrationItem): LucideIcon {
+  const iconKey = integration.ui?.icon;
+  if (iconKey && INTEGRATION_ICON_MAP[iconKey]) {
+    return INTEGRATION_ICON_MAP[iconKey];
+  }
+  return DEFAULT_INTEGRATION_ICON;
+}
+
+function groupIntegrations(integrations: IntegrationItem[]): Record<string, IntegrationItem[]> {
+  const groups: Record<string, IntegrationItem[]> = {};
+  for (const item of integrations) {
+    const group = item.nav?.group || item.ui?.nav?.group || "other";
+    if (!groups[group]) {
+      groups[group] = [];
+    }
+    groups[group].push(item);
+  }
+  return groups;
+}
+
+const GROUP_LABELS: Record<string, string> = {
+  workspace: "Workspace",
+  tools: "Tools",
+  other: "Integrations",
+};
 
 interface NavEntry {
   href: string;
@@ -89,21 +137,6 @@ interface SidebarShellProps {
   footerSlot?: ReactNode;
 }
 
-type IntegrationEntry = {
-  name: string;
-  ui?: {
-    title?: string;
-    entry?: { type?: "link" | "iframe"; url?: string };
-    nav?: {
-      order?: number;
-      visible?: boolean;
-      group?: string;
-      open_in_new_tab?: boolean;
-    };
-  };
-  nav?: { order?: number; visible?: boolean; group?: string };
-};
-
 export function SidebarShell({
   sessions = [],
   activeSessionId = null,
@@ -121,38 +154,29 @@ export function SidebarShell({
   const { t } = useTranslation();
   const { sidebarCollapsed: collapsed, setSidebarCollapsed: setCollapsed } =
     useAppShell();
-  const { app_name } = useAppConfig();
-  const [integrations, setIntegrations] = useState<IntegrationEntry[]>([]);
+  const { app_name, logo_url } = useAppConfig();
+  const [integrations, setIntegrations] = useState<IntegrationItem[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+    (async () => {
       try {
-        const res = await apiFetch(apiUrl("/api/v1/integrations"));
+        const res = await fetch(apiUrl("/api/v1/integrations"), {
+          credentials: "include",
+        });
         if (!res.ok) return;
-        const json = (await res.json()) as { integrations?: IntegrationEntry[] };
-        if (cancelled) return;
-        setIntegrations(Array.isArray(json.integrations) ? json.integrations : []);
+        const data = await res.json();
+        if (!cancelled && data.integrations) {
+          setIntegrations(data.integrations);
+        }
       } catch {
-        if (!cancelled) setIntegrations([]);
+        /* ignore */
       }
-    }
-    load();
+    })();
     return () => {
       cancelled = true;
     };
   }, []);
-
-  const visibleIntegrations = useMemo(() => {
-    const items = integrations.filter((it) => it.nav?.visible !== false);
-    items.sort((a, b) => {
-      const ao = a.nav?.order ?? 100;
-      const bo = b.nav?.order ?? 100;
-      if (ao !== bo) return ao - bo;
-      return a.name.localeCompare(b.name);
-    });
-    return items;
-  }, [integrations]);
 
   const handleNewChat = () => {
     if (onNewChat) {
@@ -170,12 +194,12 @@ export function SidebarShell({
         <div className="relative mb-2 flex h-9 w-9 items-center justify-center">
           <Link
             href="/"
-            aria-label="DeepTutor"
+            aria-label={app_name}
             className="flex items-center justify-center transition-opacity duration-150 group-hover/sb:opacity-0"
           >
             <Image
-              src="/logo-ver2.png"
-              alt="DeepTutor"
+              src={logo_url}
+              alt={app_name}
               width={22}
               height={22}
               className="h-[22px] w-[22px] rounded-md"
@@ -234,37 +258,40 @@ export function SidebarShell({
               </Tooltip>
             );
           })}
-        </nav>
 
-        {visibleIntegrations.length > 0 && (
-          <>
+          {/* Third-party integrations (collapsed) */}
+          {integrations.length > 0 && (
             <div className="my-1.5 h-px w-7 bg-[var(--border)]/40" />
-            <nav className="flex w-full flex-col items-center gap-1 px-1.5">
-              {visibleIntegrations.map((it) => {
-                const title = it.ui?.title || it.name;
-                const active = pathname.startsWith(`/integrations/${it.name}`);
-                return (
-                  <Tooltip key={it.name} label={title} side="right">
-                    <Link
-                      href={`/integrations/${it.name}`}
-                      aria-label={title}
-                      className={`relative flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-150 ${
-                        active
-                          ? "bg-[var(--background)]/80 text-[var(--foreground)] shadow-sm"
-                          : "text-[var(--muted-foreground)] hover:bg-[var(--background)]/50 hover:text-[var(--foreground)]"
-                      }`}
-                    >
-                      {active && (
-                        <span className="absolute -left-1.5 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-[var(--foreground)]/80" />
-                      )}
-                      <Plug size={18} strokeWidth={active ? 2 : 1.6} />
-                    </Link>
-                  </Tooltip>
-                );
-              })}
-            </nav>
-          </>
-        )}
+          )}
+          {integrations.map((integration) => {
+            const href = `/integrations/${integration.name}`;
+            const active = pathname.startsWith(href);
+            const title = integration.ui?.title || integration.name;
+            const Icon = getIntegrationIcon(integration);
+            return (
+              <Tooltip
+                key={integration.name}
+                label={title}
+                side="right"
+              >
+                <Link
+                  href={href}
+                  aria-label={title}
+                  className={`relative flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-150 ${
+                    active
+                      ? "bg-[var(--background)]/80 text-[var(--foreground)] shadow-sm"
+                      : "text-[var(--muted-foreground)] hover:bg-[var(--background)]/50 hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  {active && (
+                    <span className="absolute -left-1.5 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-[var(--foreground)]/80" />
+                  )}
+                  <Icon size={16} strokeWidth={active ? 2 : 1.6} />
+                </Link>
+              </Tooltip>
+            );
+          })}
+        </nav>
 
         <div className="flex-1" />
 
@@ -315,7 +342,7 @@ export function SidebarShell({
       <div className="flex h-14 items-center justify-between px-4">
         <Link href="/" className="group flex items-center gap-2">
           <Image
-            src="/logo-ver2.png"
+            src={logo_url}
             alt={app_name}
             width={22}
             height={22}
@@ -388,29 +415,38 @@ export function SidebarShell({
             );
           })}
 
-          {visibleIntegrations.length > 0 && (
-            <div className="pt-2">
+          {/* Third-party integrations (grouped) */}
+          {integrations.length > 0 && (
+            <>
               <div className="my-2 h-px w-full bg-[var(--border)]/40" />
-              {visibleIntegrations.map((it) => {
-                const title = it.ui?.title || it.name;
-                const active = pathname.startsWith(`/integrations/${it.name}`);
-
-                return (
-                  <Link
-                    key={it.name}
-                    href={`/integrations/${it.name}`}
-                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] transition-colors ${
-                      active
-                        ? "bg-[var(--background)]/70 font-medium text-[var(--foreground)]"
-                        : "text-[var(--muted-foreground)] hover:bg-[var(--background)]/50 hover:text-[var(--foreground)]"
-                    }`}
-                  >
-                    <Plug size={16} strokeWidth={active ? 1.9 : 1.5} />
-                    <span>{title}</span>
-                  </Link>
-                );
-              })}
-            </div>
+              {Object.entries(groupIntegrations(integrations)).map(([groupKey, items]) => (
+                <div key={groupKey} className="mb-1">
+                  <div className="px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-[var(--muted-foreground)]/60">
+                    {t(GROUP_LABELS[groupKey] || groupKey)}
+                  </div>
+                  {items.map((integration) => {
+                    const title = integration.ui?.title || integration.name;
+                    const href = `/integrations/${integration.name}`;
+                    const isActive = pathname.startsWith(href);
+                    const Icon = getIntegrationIcon(integration);
+                    return (
+                      <Link
+                        key={integration.name}
+                        href={href}
+                        className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] transition-colors ${
+                          isActive
+                            ? "bg-[var(--background)]/70 font-medium text-[var(--foreground)]"
+                            : "text-[var(--muted-foreground)] hover:bg-[var(--background)]/50 hover:text-[var(--foreground)]"
+                        }`}
+                      >
+                        <Icon size={14} strokeWidth={isActive ? 1.9 : 1.5} />
+                        <span>{title}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
+            </>
           )}
         </div>
       </nav>

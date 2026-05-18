@@ -118,27 +118,35 @@
 
 ### 📦 版本发布
 
-> **[2026.5.18]** [v1.3.11] — 通过后端 API 运行时动态配置应用名称，首次登录默认中文界面，新增生产环境打包脚本支持离线部署。
+> **[2026.5.18]** [v1.3.11] — 通过后端 API 运行时动态配置应用名称、Logo 和背景图，首次登录默认中文界面，增强备份/升级系统支持 fork 核心文件追踪，新增生产环境打包脚本支持离线部署。
 
 <details>
 <summary><b>v1.3.11 详细变更说明</b></summary>
 
-**1. 运行时可配置应用名称**
+**1. 运行时可配置应用名称、Logo 和背景图**
 
-应用名称现在通过后端 API 在运行时获取，构建后无需重新编译前端即可修改。
+应用名称、Logo 和背景图现在通过后端 API 在运行时获取，构建后无需重新编译前端即可修改。
 
 | 文件 | 变更内容 |
 |:---|:---|
-| [deeptutor/api/routers/app_config.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/app_config.py) | 新增后端端点 `GET /api/v1/config/app`，返回 `app_name` |
+| [deeptutor/api/routers/app_config.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/app_config.py) | 后端端点 `GET /api/v1/config/app`，返回 `app_name`、`logo_url`、`background_url` |
 | [deeptutor/api/main.py](file:///d:/Doubao/DeepTutor/deeptutor/api/main.py) | 注册 `app_config` 路由到 `/api/v1/config` |
-| [web/context/AppConfigContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppConfigContext.tsx) | 新增 React Context，运行时从后端获取应用名称 |
-| [web/app/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/layout.tsx) | 使用 `AppConfigProvider` 包裹子组件；metadata 改为 `generateMetadata` 动态生成 |
-| [web/components/sidebar/SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | 使用 `useAppConfig()` 替代构建时的 `APP_NAME` |
-| [web/app/(auth)/login/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/login/page.tsx) | 使用 `useAppConfig()` 替代构建时的 `APP_NAME` |
-| [web/app/(auth)/register/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/register/page.tsx) | 使用 `useAppConfig()` 替代构建时的 `APP_NAME` |
-| [web/lib/config.ts](file:///d:/Doubao/DeepTutor/web/lib/config.ts) | 更新注释，同时记录构建时和运行时两种配置方式 |
+| [web/context/AppConfigContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppConfigContext.tsx) | React Context，运行时从后端获取应用配置 |
+| [web/components/BackgroundImage.tsx](file:///d:/Doubao/DeepTutor/web/components/BackgroundImage.tsx) | 新增背景图组件 |
+| [web/components/sidebar/SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | 使用 `useAppConfig()` 动态显示应用名称和 Logo |
+| [web/app/(workspace)/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/layout.tsx) | 添加 `BackgroundImage` 组件 |
+| [web/app/(auth)/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/layout.tsx) | 添加 `BackgroundImage` 组件 |
+| [web/app/(admin)/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/(admin)/layout.tsx) | 添加 `BackgroundImage` 组件 |
+| [web/app/(utility)/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/(utility)/layout.tsx) | 添加 `BackgroundImage` 组件 |
+| [web/app/(utility)/space/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/(utility)/space/layout.tsx) | 添加 `BackgroundImage` 组件 |
+| [web/next.config.js](file:///d:/Doubao/DeepTutor/web/next.config.js) | 添加图片优化配置，支持远程模式 |
 
-使用方式：在 `.env` 中设置 `NEXT_PUBLIC_APP_NAME=你的产品名称`，重启后端即可生效，无需重新构建前端。
+使用方式：在 `.env` 中设置以下变量，重启后端即可生效，无需重新构建前端。
+```bash
+NEXT_PUBLIC_APP_NAME=你的产品名称
+NEXT_PUBLIC_APP_LOGO=/logo-ver2.png
+NEXT_PUBLIC_APP_BACKGROUND=https://example.com/bg.jpg
+```
 
 **2. 首次登录默认中文界面**
 
@@ -150,7 +158,21 @@
 | [web/context/AppShellContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppShellContext.tsx) | 初始语言状态从 `"en"` 改为 `"zh"` |
 | [web/i18n/init.ts](file:///d:/Doubao/DeepTutor/web/i18n/init.ts) | `normalizeLanguage()` 无输入时默认返回 `"zh"` |
 
-**3. 生产环境打包脚本**
+**3. 增强备份/升级系统**
+
+| 文件 | 变更内容 |
+|:---|:---|
+| [scripts/deeptutor_upgrade.py](file:///d:/Doubao/DeepTutor/scripts/deeptutor_upgrade.py) | 增强备份功能，支持 fork 核心文件追踪、配置/插件目录包含，以及大目录排除规则 |
+| [deeptutor_cli/upgrade_cmd.py](file:///d:/Doubao/DeepTutor/deeptutor_cli/upgrade_cmd.py) | CLI 集成升级/备份命令 |
+
+备份现在包含：
+- `.env` 和配置文件
+- 插件和集成目录
+- fork 自研核心文件（integrations.py、loader.py、SidebarShell.tsx 等）
+- Git 跟踪的已修改文件
+- 排除项：`node_modules`、`.venv`、`__pycache__`、构建产物
+
+**4. 生产环境打包脚本**
 
 新增前后端生产环境打包脚本，支持 Windows 环境下内网离线部署。
 
@@ -161,7 +183,7 @@
 | [scripts/start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py) | 生产启动脚本；支持 `--skip-deps` 跳过依赖安装 |
 | [scripts/stop_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/stop_web_prod.py) | 生产停止脚本 |
 
-**4. Bug 修复**
+**5. Bug 修复**
 
 | 文件 | 变更内容 |
 |:---|:---|

@@ -30,7 +30,9 @@ export function TutorBotRecent({ collapsed = false }: { collapsed?: boolean }) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(apiUrl("/api/v1/tutorbot/recent?limit=3"));
+        const res = await fetch(apiUrl("/api/v1/tutorbot/recent?limit=3"), {
+          credentials: "include",
+        });
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled) setBots(data);

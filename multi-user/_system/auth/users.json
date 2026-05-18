@@ -1,0 +1,23 @@
+{
+  "17625398@qq.com": {
+    "id": "u_02cb77ebfbd74b23b5f01102df62fd02",
+    "hash": "$2b$12$IVQU3hGKnbl1XQBnN6n50eK4i.sNHZ8BwSWq2I6R.J1DxmCCM0jZu",
+    "role": "admin",
+    "created_at": "2026-05-18T07:36:25.884672+00:00",
+    "disabled": false
+  },
+  "newuser": {
+    "id": "u_a97be91dcb714a95a9e5329cbe7bda9b",
+    "hash": "$2b$12$nCWDAOhetNnhcoI0DZr4MOaPxoaryHR1M0pTY4moWJK7/AbN57szi",
+    "role": "user",
+    "created_at": "2026-05-18T08:34:23.358948+00:00",
+    "disabled": false
+  },
+  "admin@deeptutor.com": {
+    "id": "u_9f8e7d6c5b4a3210fedcba9876543210",
+    "hash": "$2b$12$xS5buC7IJ0lA4m/ctI2D3.GTiOh4KDzVe1YkSMw6ogXLsoo8HGgVm",
+    "role": "admin",
+    "created_at": "2026-05-18T11:40:00.000000+00:00",
+    "disabled": false
+  }
+}

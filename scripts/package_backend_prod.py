@@ -278,8 +278,8 @@ def _create_startup_scripts(language: str, include_deps: bool = True) -> None:
     start_sh.chmod(0o755)
     
     # 创建安装说明
-    install_md = BACKEND_PROD_DIR / "INSTALL.md"
-    install_md.write_text(
+    install_md_path = BACKEND_PROD_DIR / "INSTALL.md"
+    install_md_path.write_text(
         '# DeepTutor Backend Installation Guide\n\n'
         '## Prerequisites\n\n'
         '- Python 3.11 or higher\n'

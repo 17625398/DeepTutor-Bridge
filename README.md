@@ -118,27 +118,35 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 
 ### 📦 Releases
 
-> **[2026.5.18]** [v1.3.11] — Runtime-configurable application name via backend API (`/api/v1/config/app`), default Chinese locale for first-time users, and production packaging scripts for offline deployment.
+> **[2026.5.18]** [v1.3.11] — Runtime-configurable application name, logo, and background image via backend API (`/api/v1/config/app`), default Chinese locale for first-time users, enhanced backup/upgrade system with forked core file tracking, and production packaging scripts for offline deployment.
 
 <details>
 <summary><b>v1.3.11 detailed changelog</b></summary>
 
-**1. Runtime-configurable application name**
+**1. Runtime-configurable application name, logo, and background image**
 
-The app name is now fetched from the backend API at runtime, so you can change it after building without recompiling the frontend.
+The app name, logo, and background image are now fetched from the backend API at runtime, so you can change them after building without recompiling the frontend.
 
 | File | Change |
 |:---|:---|
-| [deeptutor/api/routers/app_config.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/app_config.py) | New backend endpoint `GET /api/v1/config/app` returning `app_name` |
+| [deeptutor/api/routers/app_config.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/app_config.py) | Backend endpoint `GET /api/v1/config/app` returning `app_name`, `logo_url`, `background_url` |
 | [deeptutor/api/main.py](file:///d:/Doubao/DeepTutor/deeptutor/api/main.py) | Register `app_config` router under `/api/v1/config` |
-| [web/context/AppConfigContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppConfigContext.tsx) | New React context that fetches app name from backend at runtime |
-| [web/app/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/layout.tsx) | Wrap children with `AppConfigProvider`; metadata uses `generateMetadata` |
-| [web/components/sidebar/SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | Use `useAppConfig()` instead of build-time `APP_NAME` |
-| [web/app/(auth)/login/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/login/page.tsx) | Use `useAppConfig()` instead of build-time `APP_NAME` |
-| [web/app/(auth)/register/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/register/page.tsx) | Use `useAppConfig()` instead of build-time `APP_NAME` |
-| [web/lib/config.ts](file:///d:/Doubao/DeepTutor/web/lib/config.ts) | Updated comments documenting both build-time and runtime configuration |
+| [web/context/AppConfigContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppConfigContext.tsx) | React context that fetches app config from backend at runtime |
+| [web/components/BackgroundImage.tsx](file:///d:/Doubao/DeepTutor/web/components/BackgroundImage.tsx) | New background image component |
+| [web/components/sidebar/SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | Use `useAppConfig()` for dynamic app name and logo |
+| [web/app/(workspace)/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/(workspace)/layout.tsx) | Add `BackgroundImage` component |
+| [web/app/(auth)/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/layout.tsx) | Add `BackgroundImage` component |
+| [web/app/(admin)/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/(admin)/layout.tsx) | Add `BackgroundImage` component |
+| [web/app/(utility)/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/(utility)/layout.tsx) | Add `BackgroundImage` component |
+| [web/app/(utility)/space/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/(utility)/space/layout.tsx) | Add `BackgroundImage` component |
+| [web/next.config.js](file:///d:/Doubao/DeepTutor/web/next.config.js) | Add image optimization configuration for remote patterns |
 
-Usage: set `NEXT_PUBLIC_APP_NAME=Your Product` in `.env` and restart the backend. No rebuild needed.
+Usage: set the following in `.env` and restart the backend. No rebuild needed.
+```bash
+NEXT_PUBLIC_APP_NAME=Your Product
+NEXT_PUBLIC_APP_LOGO=/logo-ver2.png
+NEXT_PUBLIC_APP_BACKGROUND=https://example.com/bg.jpg
+```
 
 **2. Default Chinese locale for first-time users**
 
@@ -148,7 +156,21 @@ Usage: set `NEXT_PUBLIC_APP_NAME=Your Product` in `.env` and restart the backend
 | [web/context/AppShellContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppShellContext.tsx) | Initial language state changed from `"en"` to `"zh"` |
 | [web/i18n/init.ts](file:///d:/Doubao/DeepTutor/web/i18n/init.ts) | `normalizeLanguage()` returns `"zh"` when input is empty |
 
-**3. Production packaging scripts for offline deployment**
+**3. Enhanced backup/upgrade system**
+
+| File | Change |
+|:---|:---|
+| [scripts/deeptutor_upgrade.py](file:///d:/Doubao/DeepTutor/scripts/deeptutor_upgrade.py) | Enhanced backup with forked core file tracking, config/plugin inclusion, and exclusion patterns for large directories |
+| [deeptutor_cli/upgrade_cmd.py](file:///d:/Doubao/DeepTutor/deeptutor_cli/upgrade_cmd.py) | CLI integration for upgrade/backup commands |
+
+Backup now includes:
+- `.env` and configuration files
+- Plugin and integration directories
+- Fork-authored core files (integrations.py, loader.py, SidebarShell.tsx, etc.)
+- Git-tracked modified files
+- Excludes: `node_modules`, `.venv`, `__pycache__`, build artifacts
+
+**4. Production packaging scripts for offline deployment**
 
 | File | Change |
 |:---|:---|
@@ -157,7 +179,7 @@ Usage: set `NEXT_PUBLIC_APP_NAME=Your Product` in `.env` and restart the backend
 | [scripts/start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py) | Production startup script; supports `--skip-deps` to skip dependency installation |
 | [scripts/stop_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/stop_web_prod.py) | Production stop script |
 
-**4. Bug fixes**
+**5. Bug fixes**
 
 | File | Change |
 |:---|:---|
