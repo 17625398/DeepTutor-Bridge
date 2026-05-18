@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { apiBase } from "@/lib/api";
+import { resolveBase } from "@/lib/api";
 
 interface AppConfig {
   app_name: string;
@@ -16,7 +16,7 @@ async function fetchAppConfig(): Promise<AppConfig> {
   if (_cachedConfig) return _cachedConfig;
   if (_fetchPromise) return _fetchPromise;
 
-  _fetchPromise = fetch(`${apiBase()}/config/app`)
+  _fetchPromise = fetch(`${resolveBase()}/api/v1/config/app`)
     .then((res) => res.json())
     .then((data) => {
       _cachedConfig = data;

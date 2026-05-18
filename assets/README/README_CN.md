@@ -156,9 +156,16 @@
 
 | 文件 | 变更内容 |
 |:---|:---|
-| [scripts/package_backend_prod.py](file:///d:/Doubao/DeepTutor/scripts/package_backend_prod.py) | 后端生产打包，从虚拟环境复制依赖包 |
-| [scripts/start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py) | 生产启动脚本 |
+| [scripts/package_backend_prod.py](file:///d:/Doubao/DeepTutor/scripts/package_backend_prod.py) | 后端生产打包，从虚拟环境复制依赖包；支持 `--skip-deps` 跳过依赖 |
+| [scripts/package_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/package_web_prod.py) | 前端生产打包，包含 Windows sharp 模块；支持 `--skip-deps` 跳过依赖 |
+| [scripts/start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py) | 生产启动脚本；支持 `--skip-deps` 跳过依赖安装 |
 | [scripts/stop_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/stop_web_prod.py) | 生产停止脚本 |
+
+**4. Bug 修复**
+
+| 文件 | 变更内容 |
+|:---|:---|
+| [web/context/AppConfigContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppConfigContext.tsx) | 修复导入错误：使用 `resolveBase` 替代不存在的 `apiBase` |
 
 </details>
 

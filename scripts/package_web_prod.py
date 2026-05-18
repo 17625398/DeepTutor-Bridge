@@ -233,6 +233,11 @@ def main() -> None:
         default="zh",
         help="输出语言（默认：zh）",
     )
+    parser.add_argument(
+        "--skip-deps",
+        action="store_true",
+        help="跳过依赖安装和 sharp 打包（仅打包构建产物）",
+    )
     args = parser.parse_args()
     
     language = args.lang
@@ -241,13 +246,15 @@ def main() -> None:
     node, npm = _check_prerequisites(language)
     
     # 安装依赖
-    _install_deps(npm, language)
+    if not args.skip_deps:
+        _install_deps(npm, language)
     
     # 构建前端
     _build_frontend(npm, language)
     
     # 安装 Windows 平台的 sharp
-    _install_sharp_for_windows(language)
+    if not args.skip_deps:
+        _install_sharp_for_windows(language)
     
     # 准备 standalone 目录用于打包
     _prepare_standalone(language)

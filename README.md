@@ -152,9 +152,16 @@ Usage: set `NEXT_PUBLIC_APP_NAME=Your Product` in `.env` and restart the backend
 
 | File | Change |
 |:---|:---|
-| [scripts/package_backend_prod.py](file:///d:/Doubao/DeepTutor/scripts/package_backend_prod.py) | Backend production packager, copies dependencies from venv |
-| [scripts/start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py) | Production startup script |
+| [scripts/package_backend_prod.py](file:///d:/Doubao/DeepTutor/scripts/package_backend_prod.py) | Backend production packager, copies dependencies from venv; supports `--skip-deps` |
+| [scripts/package_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/package_web_prod.py) | Frontend production packager with Windows sharp; supports `--skip-deps` |
+| [scripts/start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py) | Production startup script; supports `--skip-deps` to skip dependency installation |
 | [scripts/stop_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/stop_web_prod.py) | Production stop script |
+
+**4. Bug fixes**
+
+| File | Change |
+|:---|:---|
+| [web/context/AppConfigContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppConfigContext.tsx) | Fix import error: use `resolveBase` instead of non-existent `apiBase` |
 
 </details>
 

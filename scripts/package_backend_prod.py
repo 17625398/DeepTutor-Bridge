@@ -221,9 +221,36 @@ def _prepare_source(language: str) -> None:
     print(f"  ✓ 源码准备完成")
 
 
-def _create_startup_scripts(language: str) -> None:
+def _create_startup_scripts(language: str, include_deps: bool = True) -> None:
     """创建启动脚本"""
     print(_t(language, "creating_startup_scripts"))
+    
+    if include_deps:
+        install_step = (
+            'echo Installing dependencies from local packages ...\n'
+            'pip install --no-index --find-links=packages -r requirements.txt\n'
+            'echo.\n'
+        )
+        install_step_sh = (
+            'echo "Installing dependencies from local packages ..."\n'
+            'pip install --no-index --find-links=packages -r requirements.txt\n'
+            'echo ""\n'
+        )
+        install_md = (
+            '2. Install dependencies (offline, no internet required):\n'
+            '   ```bash\n'
+            '   pip install --no-index --find-links=packages -r requirements.txt\n'
+            '   ```\n\n'
+        )
+    else:
+        install_step = 'echo Skipping dependency installation (no packages included).\n'
+        install_step_sh = 'echo "Skipping dependency installation (no packages included)."\n'
+        install_md = (
+            '2. Install dependencies manually (requires internet or local packages):\n'
+            '   ```bash\n'
+            '   pip install -r requirements.txt\n'
+            '   ```\n\n'
+        )
     
     # 创建 Windows 启动脚本
     start_script = BACKEND_PROD_DIR / "start_backend.bat"
@@ -231,9 +258,7 @@ def _create_startup_scripts(language: str) -> None:
         '@echo off\n'
         'echo Starting DeepTutor Backend ...\n'
         'echo.\n'
-        'echo Installing dependencies from local packages ...\n'
-        'pip install --no-index --find-links=packages -r requirements.txt\n'
-        'echo.\n'
+        + install_step +
         'echo Starting backend server ...\n'
         'python -m uvicorn deeptutor.api.main:app --host 0.0.0.0 --port 8001 --log-level info\n',
         encoding='utf-8',
@@ -245,9 +270,7 @@ def _create_startup_scripts(language: str) -> None:
         '#!/bin/bash\n'
         'echo "Starting DeepTutor Backend ..."\n'
         'echo ""\n'
-        'echo "Installing dependencies from local packages ..."\n'
-        'pip install --no-index --find-links=packages -r requirements.txt\n'
-        'echo ""\n'
+        + install_step_sh +
         'echo "Starting backend server ..."\n'
         'python -m uvicorn deeptutor.api.main:app --host 0.0.0.0 --port 8001 --log-level info\n',
         encoding='utf-8',
@@ -263,10 +286,7 @@ def _create_startup_scripts(language: str) -> None:
         '- pip package manager\n\n'
         '## Installation Steps\n\n'
         '1. Extract the package to your desired location\n\n'
-        '2. Install dependencies (offline, no internet required):\n'
-        '   ```bash\n'
-        '   pip install --no-index --find-links=packages -r requirements.txt\n'
-        '   ```\n\n'
+        + install_md +
         '3. Configure environment:\n'
         '   ```bash\n'
         '   cp .env.example .env\n'
@@ -323,6 +343,11 @@ def main() -> None:
         default="zh",
         help="输出语言（默认：zh）",
     )
+    parser.add_argument(
+        "--skip-deps",
+        action="store_true",
+        help="跳过依赖包的导出和打包（仅打包源码）",
+    )
     args = parser.parse_args()
     
     language = args.lang
@@ -331,16 +356,18 @@ def main() -> None:
     _check_python(language)
     
     # 导出依赖
-    _export_dependencies(language)
+    if not args.skip_deps:
+        _export_dependencies(language)
     
     # 准备源码
     _prepare_source(language)
     
     # 复制虚拟环境中的依赖包
-    _copy_packages(language)
+    if not args.skip_deps:
+        _copy_packages(language)
     
     # 创建启动脚本
-    _create_startup_scripts(language)
+    _create_startup_scripts(language, include_deps=not args.skip_deps)
     
     # 创建输出目录
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

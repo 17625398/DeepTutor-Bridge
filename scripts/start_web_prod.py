@@ -133,6 +133,11 @@ def _parse_args() -> argparse.Namespace:
         default="auto",
         help="How to run the frontend after build (default: auto).",
     )
+    parser.add_argument(
+        "--skip-deps",
+        action="store_true",
+        help="Skip installing Python and frontend dependencies.",
+    )
     return parser.parse_args()
 
 
@@ -270,8 +275,9 @@ def main() -> None:
         state_path=PROD_STATE_PATH,
     )
 
-    _ensure_python_server_deps(python_exe=PYTHON_EXE, language=language)
-    _ensure_frontend_deps(npm=npm, env=frontend_env, language=language)
+    if not args.skip_deps:
+        _ensure_python_server_deps(python_exe=PYTHON_EXE, language=language)
+        _ensure_frontend_deps(npm=npm, env=frontend_env, language=language)
 
     if not args.skip_build:
         _build_frontend(npm=npm, env=frontend_env, language=language)
