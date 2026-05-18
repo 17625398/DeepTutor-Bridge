@@ -1,5 +1,5 @@
 name: "hermes-web-ui"
-version: "0.5.24"
+version: "0.5.28"
 type: "integration"
 description: "Hermes Web UI integration (upstream repo under data/user/integrations/hermes-web-ui)"
 author: "third-party"

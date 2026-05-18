@@ -100,7 +100,7 @@
 | 集成名 | 目录 | 入口地址 | 是否自动拉起 | 备注 |
 |:---|:---|:---|:---:|:---|
 | `hermes-web-ui` | [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui) | `http://127.0.0.1:5173` | 是 | 同时拉起前端和后端服务；后端健康检查地址为 `http://127.0.0.1:8648/health` |
-| `linkmind` | [LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind) | `http://127.0.0.1:8080` | 是 | 若已有 `LinkMind.jar` 会直接复用；否则需要 Maven 构建 `lagi-web/target/LinkMind.jar`，随后以 `server` 模式启动 Java 服务 |
+| `linkmind` | [LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind) | `http://127.0.0.1:8080` | 是 | 若已有 `LinkMind.jar` 会直接复用；否则需要 Maven 构建 `lagi-web/target/LinkMind.jar`，随后通过 `runtime.mode: mate` 配置并以 `java -jar LinkMind.jar --enable-sync=false` 方式启动 |
 | `openhuma` | [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) | `http://127.0.0.1:1420` | 是 | 同时拉起 mock API、Rust core 与前端；core 健康检查地址为 `http://127.0.0.1:7788/health` |
 
 **6）归属与边界说明**
@@ -117,6 +117,50 @@
 - 这种布局的目标，是在保留上游同步、rebase 与 cherry-pick 可维护性的同时，增加第三方 Git 开源项目的运行时集成能力
 
 ### 📦 版本发布
+
+> **[2026.5.18]** [v1.3.11] — 通过后端 API 运行时动态配置应用名称，首次登录默认中文界面，新增生产环境打包脚本支持离线部署。
+
+<details>
+<summary><b>v1.3.11 详细变更说明</b></summary>
+
+**1. 运行时可配置应用名称**
+
+应用名称现在通过后端 API 在运行时获取，构建后无需重新编译前端即可修改。
+
+| 文件 | 变更内容 |
+|:---|:---|
+| [deeptutor/api/routers/app_config.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/app_config.py) | 新增后端端点 `GET /api/v1/config/app`，返回 `app_name` |
+| [deeptutor/api/main.py](file:///d:/Doubao/DeepTutor/deeptutor/api/main.py) | 注册 `app_config` 路由到 `/api/v1/config` |
+| [web/context/AppConfigContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppConfigContext.tsx) | 新增 React Context，运行时从后端获取应用名称 |
+| [web/app/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/layout.tsx) | 使用 `AppConfigProvider` 包裹子组件；metadata 改为 `generateMetadata` 动态生成 |
+| [web/components/sidebar/SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | 使用 `useAppConfig()` 替代构建时的 `APP_NAME` |
+| [web/app/(auth)/login/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/login/page.tsx) | 使用 `useAppConfig()` 替代构建时的 `APP_NAME` |
+| [web/app/(auth)/register/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/register/page.tsx) | 使用 `useAppConfig()` 替代构建时的 `APP_NAME` |
+| [web/lib/config.ts](file:///d:/Doubao/DeepTutor/web/lib/config.ts) | 更新注释，同时记录构建时和运行时两种配置方式 |
+
+使用方式：在 `.env` 中设置 `NEXT_PUBLIC_APP_NAME=你的产品名称`，重启后端即可生效，无需重新构建前端。
+
+**2. 首次登录默认中文界面**
+
+将默认语言从英文改为中文，首次打开页面即为中文界面。
+
+| 文件 | 变更内容 |
+|:---|:---|
+| [web/context/app-shell-storage.ts](file:///d:/Doubao/DeepTutor/web/context/app-shell-storage.ts) | `readStoredLanguage()` 默认返回值改为 `"zh"` |
+| [web/context/AppShellContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppShellContext.tsx) | 初始语言状态从 `"en"` 改为 `"zh"` |
+| [web/i18n/init.ts](file:///d:/Doubao/DeepTutor/web/i18n/init.ts) | `normalizeLanguage()` 无输入时默认返回 `"zh"` |
+
+**3. 生产环境打包脚本**
+
+新增前后端生产环境打包脚本，支持 Windows 环境下内网离线部署。
+
+| 文件 | 变更内容 |
+|:---|:---|
+| [scripts/package_backend_prod.py](file:///d:/Doubao/DeepTutor/scripts/package_backend_prod.py) | 后端生产打包，从虚拟环境复制依赖包 |
+| [scripts/start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py) | 生产启动脚本 |
+| [scripts/stop_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/stop_web_prod.py) | 生产停止脚本 |
+
+</details>
 
 > **[2026.5.10]** [v1.3.10](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.10) — 修复远程 Docker CORS、SDK Provider 的 `DISABLE_SSL_VERIFY`、代码块引用误注入，并将 Matrix E2EE 改为可选扩展。
 
@@ -881,6 +925,7 @@ volumes:
 | `DISABLE_SSL_VERIFY` | 否 | 禁用出站 TLS 校验（默认 `false`） |
 | `AUTH_ENABLED` | 否 | 为 `true` 时要求登录（默认 `false`） |
 | `NEXT_PUBLIC_AUTH_ENABLED` | 否 | 前端可选覆盖；留空时从 `AUTH_ENABLED` 自动推导 |
+| `NEXT_PUBLIC_APP_NAME` | 否 | 应用显示名称，默认 `DeepTutor` |
 | `AUTH_SECRET` | 否 | JWT 签名密钥；留空时会写入 `multi-user/_system/auth/auth_secret` |
 | `AUTH_TOKEN_EXPIRE_HOURS` | 否 | 会话有效期（小时，默认 `24`） |
 | `AUTH_COOKIE_SECURE` | 否 | HTTPS 服务下将认证 Cookie 标记为 `Secure`（默认 `false`） |
@@ -1202,6 +1247,7 @@ multi-user/
 | `AUTH_TOKEN_EXPIRE_HOURS` | 否 | 默认 24 小时。 |
 | `AUTH_USERNAME` / `AUTH_PASSWORD_HASH` | 否 | 单用户回退（遗留）；多用户时请留空。 |
 | `NEXT_PUBLIC_AUTH_ENABLED` | 自动 | `start_web.py` 从 `AUTH_ENABLED` 镜像，供 Next 中间件跳转 `/login`。 |
+| `NEXT_PUBLIC_APP_NAME` | 否 | 应用显示名称，展示于侧栏、登录页与浏览器标题，默认 `DeepTutor`。 |
 
 > ⚠️ **PocketBase（`POCKETBASE_URL`）仍为单用户场景**，原因同上：无 `role`、查询未按 `user_id`。**多用户请勿启用 PocketBase**，使用默认 JSON/SQLite。
 

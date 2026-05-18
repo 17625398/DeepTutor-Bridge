@@ -287,11 +287,15 @@ from deeptutor.api.routers import (
     tutorbot,
     unified_ws,
     vision_solver,
+    app_config,
 )
 from deeptutor.multi_user.router import router as multi_user_router  # noqa: E402
 
 # Auth router is public — login/logout/register/status require no token
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+
+# App config is public — frontend needs app_name before auth
+app.include_router(app_config.router, prefix="/api/v1/config", tags=["config"])
 
 # All other routers require a valid session when AUTH_ENABLED=true.
 # require_auth is a no-op when AUTH_ENABLED=false, so this is safe for local use.

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useAppShell } from "@/context/AppShellContext";
+import { useAppConfig } from "@/context/AppConfigContext";
 import {
   BookOpen,
   Bot,
@@ -120,6 +121,7 @@ export function SidebarShell({
   const { t } = useTranslation();
   const { sidebarCollapsed: collapsed, setSidebarCollapsed: setCollapsed } =
     useAppShell();
+  const { app_name } = useAppConfig();
   const [integrations, setIntegrations] = useState<IntegrationEntry[]>([]);
 
   useEffect(() => {
@@ -314,13 +316,13 @@ export function SidebarShell({
         <Link href="/" className="group flex items-center gap-2">
           <Image
             src="/logo-ver2.png"
-            alt="DeepTutor"
+            alt={app_name}
             width={22}
             height={22}
             className="h-[22px] w-[22px] transition-transform duration-200 group-hover:scale-105"
           />
           <span className="text-[16px] font-semibold leading-none tracking-[-0.02em] text-[var(--foreground)]">
-            DeepTutor
+            {app_name}
           </span>
         </Link>
         <button

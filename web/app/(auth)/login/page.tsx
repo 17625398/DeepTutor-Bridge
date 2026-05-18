@@ -4,11 +4,13 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login, fetchAuthStatus, checkIsFirstUser } from "@/lib/auth";
+import { useAppConfig } from "@/context/AppConfigContext";
 
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/";
+  const { app_name } = useAppConfig();
 
   const registered = searchParams.get("registered") === "1";
 
@@ -51,7 +53,7 @@ function LoginPageContent() {
       {/* Logo / Title */}
       <div className="text-center mb-8">
         <h1 className="text-2xl font-semibold text-[var(--foreground)] tracking-tight">
-          DeepTutor
+          {app_name}
         </h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
           Sign in to your account

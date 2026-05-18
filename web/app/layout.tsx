@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Lora } from "next/font/google";
 import "./globals.css";
 import ThemeScript from "@/components/ThemeScript";
 import { AppShellProvider } from "@/context/AppShellContext";
+import { AppConfigProvider } from "@/context/AppConfigContext";
 import { I18nClientBridge } from "@/i18n/I18nClientBridge";
 
 const fontSans = Plus_Jakarta_Sans({
@@ -17,17 +18,23 @@ const fontSerif = Lora({
   variable: "--font-serif",
 });
 
-export const metadata: Metadata = {
-  title: "DeepTutor",
-  description: "Agent-native intelligent learning companion",
-  icons: {
-    icon: [
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-    ],
-    apple: "/apple-touch-icon.png",
-  },
-};
+function getAppName(): string {
+  return process.env.APP_NAME ?? process.env.NEXT_PUBLIC_APP_NAME ?? "DeepTutor";
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: getAppName(),
+    description: "Agent-native intelligent learning companion",
+    icons: {
+      icon: [
+        { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+        { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      ],
+      apple: "/apple-touch-icon.png",
+    },
+  };
+}
 
 export default function RootLayout({
   children,
@@ -46,7 +53,9 @@ export default function RootLayout({
       </head>
       <body className="font-sans bg-[var(--background)] text-[var(--foreground)]">
         <AppShellProvider>
-          <I18nClientBridge>{children}</I18nClientBridge>
+          <AppConfigProvider>
+            <I18nClientBridge>{children}</I18nClientBridge>
+          </AppConfigProvider>
         </AppShellProvider>
       </body>
     </html>

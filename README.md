@@ -100,7 +100,7 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 | Integration | Directory | Entry URL | Auto-start | Notes |
 |:---|:---|:---|:---:|:---|
 | `hermes-web-ui` | [hermes-web-ui](file:///d:/Doubao/DeepTutor/data/user/integrations/hermes-web-ui) | `http://127.0.0.1:5173` | Yes | Starts both UI and backend server; backend health target is `http://127.0.0.1:8648/health` |
-| `linkmind` | [LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind) | `http://127.0.0.1:8080` | Yes | Reuses `LinkMind.jar` when present; otherwise needs Maven to build `lagi-web/target/LinkMind.jar`, then runs the Java server in `server` mode |
+| `linkmind` | [LinkMind](file:///d:/Doubao/DeepTutor/data/user/integrations/LinkMind) | `http://127.0.0.1:8080` | Yes | Reuses `LinkMind.jar` when present; otherwise needs Maven to build `lagi-web/target/LinkMind.jar`, then starts LinkMind in Mate mode with `runtime.mode: mate` and `java -jar LinkMind.jar --enable-sync=false` |
 | `openhuma` | [openhuman](file:///d:/Doubao/DeepTutor/data/user/integrations/openhuman) | `http://127.0.0.1:1420` | Yes | Starts mock API, Rust core, and UI; core health target is `http://127.0.0.1:7788/health` |
 
 **6) Ownership and boundary notes**
@@ -117,6 +117,46 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 - This layout keeps upstream sync and rebasing more manageable while still allowing runtime integration of external Git open-source projects
 
 ### 📦 Releases
+
+> **[2026.5.18]** [v1.3.11] — Runtime-configurable application name via backend API (`/api/v1/config/app`), default Chinese locale for first-time users, and production packaging scripts for offline deployment.
+
+<details>
+<summary><b>v1.3.11 detailed changelog</b></summary>
+
+**1. Runtime-configurable application name**
+
+The app name is now fetched from the backend API at runtime, so you can change it after building without recompiling the frontend.
+
+| File | Change |
+|:---|:---|
+| [deeptutor/api/routers/app_config.py](file:///d:/Doubao/DeepTutor/deeptutor/api/routers/app_config.py) | New backend endpoint `GET /api/v1/config/app` returning `app_name` |
+| [deeptutor/api/main.py](file:///d:/Doubao/DeepTutor/deeptutor/api/main.py) | Register `app_config` router under `/api/v1/config` |
+| [web/context/AppConfigContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppConfigContext.tsx) | New React context that fetches app name from backend at runtime |
+| [web/app/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/layout.tsx) | Wrap children with `AppConfigProvider`; metadata uses `generateMetadata` |
+| [web/components/sidebar/SidebarShell.tsx](file:///d:/Doubao/DeepTutor/web/components/sidebar/SidebarShell.tsx) | Use `useAppConfig()` instead of build-time `APP_NAME` |
+| [web/app/(auth)/login/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/login/page.tsx) | Use `useAppConfig()` instead of build-time `APP_NAME` |
+| [web/app/(auth)/register/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/register/page.tsx) | Use `useAppConfig()` instead of build-time `APP_NAME` |
+| [web/lib/config.ts](file:///d:/Doubao/DeepTutor/web/lib/config.ts) | Updated comments documenting both build-time and runtime configuration |
+
+Usage: set `NEXT_PUBLIC_APP_NAME=Your Product` in `.env` and restart the backend. No rebuild needed.
+
+**2. Default Chinese locale for first-time users**
+
+| File | Change |
+|:---|:---|
+| [web/context/app-shell-storage.ts](file:///d:/Doubao/DeepTutor/web/context/app-shell-storage.ts) | `readStoredLanguage()` defaults to `"zh"` |
+| [web/context/AppShellContext.tsx](file:///d:/Doubao/DeepTutor/web/context/AppShellContext.tsx) | Initial language state changed from `"en"` to `"zh"` |
+| [web/i18n/init.ts](file:///d:/Doubao/DeepTutor/web/i18n/init.ts) | `normalizeLanguage()` returns `"zh"` when input is empty |
+
+**3. Production packaging scripts for offline deployment**
+
+| File | Change |
+|:---|:---|
+| [scripts/package_backend_prod.py](file:///d:/Doubao/DeepTutor/scripts/package_backend_prod.py) | Backend production packager, copies dependencies from venv |
+| [scripts/start_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/start_web_prod.py) | Production startup script |
+| [scripts/stop_web_prod.py](file:///d:/Doubao/DeepTutor/scripts/stop_web_prod.py) | Production stop script |
+
+</details>
 
 > **[2026.5.10]** [v1.3.10](https://github.com/HKUDS/DeepTutor/releases/tag/v1.3.10) — Remote Docker CORS recovery, `DISABLE_SSL_VERIFY` across SDK providers, safer code-block citations, and optional Matrix E2EE add-on.
 
@@ -878,6 +918,7 @@ services:
 | `DISABLE_SSL_VERIFY` | No | Disable outbound TLS verification (default `false`) |
 | `AUTH_ENABLED` | No | Require login when `true` (default `false`) |
 | `NEXT_PUBLIC_AUTH_ENABLED` | No | Optional frontend override; blank derives from `AUTH_ENABLED` |
+| `NEXT_PUBLIC_APP_NAME` | No | Application display name (default `DeepTutor`) |
 | `AUTH_SECRET` | No | JWT signing secret; generated under `multi-user/_system/auth/auth_secret` if blank |
 | `AUTH_TOKEN_EXPIRE_HOURS` | No | Session duration in hours (default `24`) |
 | `AUTH_COOKIE_SECURE` | No | Mark the auth cookie `Secure` when serving over HTTPS (default `false`) |
@@ -1202,6 +1243,7 @@ multi-user/
 | `AUTH_TOKEN_EXPIRE_HOURS` | No | JWT lifetime; defaults to `24`. |
 | `AUTH_USERNAME` / `AUTH_PASSWORD_HASH` | No | Single-user fallback credentials (legacy env-var path). Leave blank when using multi-user. |
 | `NEXT_PUBLIC_AUTH_ENABLED` | Auto | Mirrored from `AUTH_ENABLED` by `start_web.py` so the Next.js middleware redirects unauthenticated requests to `/login`. |
+| `NEXT_PUBLIC_APP_NAME` | No | Application display name shown in the sidebar, login page, and browser title. Defaults to `DeepTutor`. |
 
 > ⚠️ **PocketBase mode (`POCKETBASE_URL` set) is single-user only.** The default PocketBase schema has no `role` field on `users` (every login resolves to `role=user`, no admin can be created), and `sessions` / `messages` / `turns` queries are not filtered by `user_id`. Multi-user deployments must keep `POCKETBASE_URL` blank and use the default JSON/SQLite backend.
 

@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { register, checkIsFirstUser, fetchAuthStatus } from "@/lib/auth";
+import { useAppConfig } from "@/context/AppConfigContext";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { app_name } = useAppConfig();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -54,7 +56,7 @@ export default function RegisterPage() {
       {/* Logo / Title */}
       <div className="text-center mb-8">
         <h1 className="text-2xl font-semibold text-[var(--foreground)] tracking-tight">
-          DeepTutor
+          {app_name}
         </h1>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
           Create your account
