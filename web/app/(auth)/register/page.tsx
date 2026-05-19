@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const { app_name } = useAppConfig();
+  const [mounted, setMounted] = useState(false);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -21,6 +22,8 @@ export default function RegisterPage() {
   const [checkingFirst, setCheckingFirst] = useState(true);
 
   useEffect(() => {
+    setMounted(true);
+
     // Redirect if already logged in
     fetchAuthStatus().then((status) => {
       if (status?.authenticated) router.replace("/");
@@ -38,7 +41,7 @@ export default function RegisterPage() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError(t("Passwords do not match"));
+      setError(mounted ? t("Passwords do not match") : "Passwords do not match");
       return;
     }
 
@@ -60,15 +63,15 @@ export default function RegisterPage() {
         <h1 className="text-2xl font-semibold text-[var(--foreground)] tracking-tight">
           {app_name}
         </h1>
-        <p className="mt-1 text-sm text-[var(--muted-foreground)]" suppressHydrationWarning>
-          {t("Create your account")}
+        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+          {mounted ? t("Create your account") : "Create your account"}
         </p>
       </div>
 
       {/* First-user notice */}
       {!checkingFirst && isFirst && (
         <div className="mb-4 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-600 dark:text-blue-400">
-          <strong>{t("First user")}:</strong> {t("You will be granted admin privileges and can manage other users from the admin dashboard.")}
+          <strong>{mounted ? t("First user") : "First user"}:</strong> {mounted ? t("You will be granted admin privileges and can manage other users from the admin dashboard.") : "You will be granted admin privileges and can manage other users from the admin dashboard."}
         </div>
       )}
 
@@ -81,7 +84,7 @@ export default function RegisterPage() {
               htmlFor="username"
               className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
             >
-              {t("Email")}
+              {mounted ? t("Email") : "Email"}
             </label>
             <input
               id="username"
@@ -105,7 +108,7 @@ export default function RegisterPage() {
               htmlFor="password"
               className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
             >
-              {t("Password")}
+              {mounted ? t("Password") : "Password"}
             </label>
             <input
               id="password"
@@ -122,7 +125,7 @@ export default function RegisterPage() {
               placeholder="••••••••"
             />
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-              {t("At least 8 characters")}
+              {mounted ? t("At least 8 characters") : "At least 8 characters"}
             </p>
           </div>
 
@@ -132,7 +135,7 @@ export default function RegisterPage() {
               htmlFor="confirmPassword"
               className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
             >
-              {t("Confirm password")}
+              {mounted ? t("Confirm password") : "Confirm password"}
             </label>
             <input
               id="confirmPassword"
@@ -167,23 +170,23 @@ export default function RegisterPage() {
                        disabled:opacity-50 disabled:cursor-not-allowed
                        transition-opacity"
           >
-            {loading ? t("Creating account…") : t("Create account")}
+            {loading ? (mounted ? t("Creating account…") : "Creating account…") : (mounted ? t("Create account") : "Create account")}
           </button>
         </form>
       </div>
 
       <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
-        {t("Already have an account?")}{" "}
+        {mounted ? t("Already have an account?") : "Already have an account?"}{" "}
         <Link
           href="/login"
           className="text-[var(--primary)] hover:underline font-medium"
         >
-          {t("Sign in")}
+          {mounted ? t("Sign in") : "Sign in"}
         </Link>
       </p>
 
       <p className="mt-3 text-center text-xs text-[var(--muted-foreground)]">
-        {app_name} · {t("Agent-Native Learning")}
+        {app_name} · {mounted ? t("Agent-Native Learning") : "Agent-Native Learning"}
       </p>
     </div>
   );

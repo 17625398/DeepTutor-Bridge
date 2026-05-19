@@ -13,6 +13,7 @@ function LoginPageContent() {
   const next = searchParams.get("next") ?? "/";
   const { t } = useTranslation();
   const { app_name } = useAppConfig();
+  const [mounted, setMounted] = useState(false);
 
   const registered = searchParams.get("registered") === "1";
 
@@ -22,6 +23,8 @@ function LoginPageContent() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+
     // If already authenticated, skip login
     fetchAuthStatus().then((status) => {
       if (status?.authenticated) {
@@ -57,15 +60,15 @@ function LoginPageContent() {
         <h1 className="text-2xl font-semibold text-[var(--foreground)] tracking-tight">
           {app_name}
         </h1>
-        <p className="mt-1 text-sm text-[var(--muted-foreground)]" suppressHydrationWarning>
-          {t("Sign in to your account")}
+        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+          {mounted ? t("Sign in to your account") : "Sign in to your account"}
         </p>
       </div>
 
       {/* Registered success notice */}
       {registered && (
         <div className="mb-4 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
-          {t("Account created! Sign in to continue.")}
+          {mounted ? t("Account created! Sign in to continue.") : "Account created! Sign in to continue."}
         </div>
       )}
 
@@ -78,7 +81,7 @@ function LoginPageContent() {
               htmlFor="username"
               className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
             >
-              {t("Email")}
+              {mounted ? t("Email") : "Email"}
             </label>
             <input
               id="username"
@@ -102,7 +105,7 @@ function LoginPageContent() {
               htmlFor="password"
               className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
             >
-              {t("Password")}
+              {mounted ? t("Password") : "Password"}
             </label>
             <input
               id="password"
@@ -137,23 +140,23 @@ function LoginPageContent() {
                        disabled:opacity-50 disabled:cursor-not-allowed
                        transition-opacity"
           >
-            {loading ? t("Signing in…") : t("Sign in")}
+            {loading ? (mounted ? t("Signing in…") : "Signing in…") : (mounted ? t("Sign in") : "Sign in")}
           </button>
         </form>
       </div>
 
       <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
-        {t("Don't have an account?")}{" "}
+        {mounted ? t("Don't have an account?") : "Don't have an account?"}{" "}
         <Link
           href="/register"
           className="text-[var(--primary)] hover:underline font-medium"
         >
-          {t("Create one")}
+          {mounted ? t("Create one") : "Create one"}
         </Link>
       </p>
 
       <p className="mt-3 text-center text-xs text-[var(--muted-foreground)]">
-        {app_name} · {t("Agent-Native Learning")}
+        {app_name} · {mounted ? t("Agent-Native Learning") : "Agent-Native Learning"}
       </p>
     </div>
   );
