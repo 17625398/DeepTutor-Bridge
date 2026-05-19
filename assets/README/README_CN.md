@@ -118,6 +118,24 @@
 
 ### 📦 版本发布
 
+> **[2026.5.19]** [v1.3.13] — 通过 Next.js API 代理重写解决局域网访问跨域 Cookie 401 错误，`apiUrl`/`wsUrl` 运行时相对路径解析。
+
+<details>
+<summary><b>v1.3.13 详细变更说明</b></summary>
+
+**1. 修复跨域 Cookie 认证问题**
+
+通过局域网 IP（如 `192.168.0.42:3782`）访问 DeepTutor 时，对 `192.168.0.42:8001` 的 API 请求被视为跨域请求。浏览器安全策略禁止在 HTTP 下发送 `SameSite=None` Cookie（需要 HTTPS），导致每次 API 调用都返回 401 错误。
+
+| 文件 | 变更内容 |
+|:---|:---|
+| [web/next.config.js](file:///d:/Doubao/DeepTutor/web/next.config.js) | 添加 `async rewrites()` 将 `/api/:path*` 代理到后端，使 API 请求变为同源 |
+| [web/lib/api.ts](file:///d:/Doubao/DeepTutor/web/lib/api.ts) | `apiUrl()` 在浏览器上下文中返回相对路径以利用 Next.js 代理；`wsUrl()` 同步更新 |
+
+此方案无需为本地/局域网部署配置 HTTPS 即可解决跨域 Cookie 问题。
+
+</details>
+
 > **[2026.5.19]** [v1.3.12] — 登录和注册页面完整国际化支持，修复 SSR 水合错误，认证布局动态背景图渲染，根布局添加全局配置上下文。
 
 <details>

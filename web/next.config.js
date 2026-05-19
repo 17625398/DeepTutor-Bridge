@@ -113,10 +113,6 @@ const nextConfig = {
     ],
   },
 
-  // Standalone output: self-contained server.js + minimal node_modules
-  // This eliminates the need to copy the full node_modules into Docker production images
-  output: "standalone",
-
   // Move dev indicator to bottom-right corner
   devIndicators: {
     position: "bottom-right",
@@ -144,6 +140,31 @@ const nextConfig = {
       ),
     };
     return config;
+  },
+
+  // Allow access from all network interfaces (for LAN access)
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Access-Control-Allow-Origin",
+            value: "*",
+          },
+        ],
+      },
+    ];
+  },
+
+  // Proxy API requests through the same port to avoid cross-origin cookie issues
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `http://localhost:${BACKEND_PORT}/api/:path*`,
+      },
+    ];
   },
 };
 

@@ -118,6 +118,24 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 
 ### 📦 Releases
 
+> **[2026.5.19]** [v1.3.13] — API proxy rewrites via Next.js to resolve cross-origin cookie 401 errors on LAN access, and `apiUrl`/`wsUrl` runtime-relative path resolution.
+
+<details>
+<summary><b>v1.3.13 detailed changelog</b></summary>
+
+**1. Cross-origin cookie authentication fix**
+
+When accessing DeepTutor from a LAN IP (e.g., `192.168.0.42:3782`), API calls to `192.168.0.42:8001` were treated as cross-origin requests. Browser security policies prevent `SameSite=None` cookies from being sent over HTTP (requires HTTPS), causing 401 errors on every API call.
+
+| File | Change |
+|:---|:---|
+| [web/next.config.js](file:///d:/Doubao/DeepTutor/web/next.config.js) | Add `async rewrites()` to proxy `/api/:path*` to backend, making API calls same-origin |
+| [web/lib/api.ts](file:///d:/Doubao/DeepTutor/web/lib/api.ts) | `apiUrl()` returns relative paths in browser context to leverage Next.js proxy; `wsUrl()` updated similarly |
+
+This eliminates cross-origin cookie issues without requiring HTTPS for local/LAN deployments.
+
+</details>
+
 > **[2026.5.19]** [v1.3.12] — Full i18n support for login and register pages with SSR hydration fix, dynamic background image for auth layouts, and `AppConfigProvider` in root layout for global config access.
 
 <details>
