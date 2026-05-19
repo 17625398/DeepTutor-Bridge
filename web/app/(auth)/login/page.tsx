@@ -4,12 +4,14 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login, fetchAuthStatus, checkIsFirstUser } from "@/lib/auth";
+import { useTranslation } from "react-i18next";
 import { useAppConfig } from "@/context/AppConfigContext";
 
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/";
+  const { t } = useTranslation();
   const { app_name } = useAppConfig();
 
   const registered = searchParams.get("registered") === "1";
@@ -49,21 +51,21 @@ function LoginPageContent() {
   }
 
   return (
-    <div className="w-full max-w-sm">
+    <div className="w-full max-w-sm" suppressHydrationWarning>
       {/* Logo / Title */}
       <div className="text-center mb-8">
         <h1 className="text-2xl font-semibold text-[var(--foreground)] tracking-tight">
           {app_name}
         </h1>
-        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Sign in to your account
+        <p className="mt-1 text-sm text-[var(--muted-foreground)]" suppressHydrationWarning>
+          {t("Sign in to your account")}
         </p>
       </div>
 
       {/* Registered success notice */}
       {registered && (
         <div className="mb-4 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-600 dark:text-green-400">
-          Account created! Sign in to continue.
+          {t("Account created! Sign in to continue.")}
         </div>
       )}
 
@@ -76,7 +78,7 @@ function LoginPageContent() {
               htmlFor="username"
               className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
             >
-              Email
+              {t("Email")}
             </label>
             <input
               id="username"
@@ -100,7 +102,7 @@ function LoginPageContent() {
               htmlFor="password"
               className="block text-sm font-medium text-[var(--foreground)] mb-1.5"
             >
-              Password
+              {t("Password")}
             </label>
             <input
               id="password"
@@ -135,23 +137,23 @@ function LoginPageContent() {
                        disabled:opacity-50 disabled:cursor-not-allowed
                        transition-opacity"
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? t("Signing in…") : t("Sign in")}
           </button>
         </form>
       </div>
 
       <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
-        Don&apos;t have an account?{" "}
+        {t("Don't have an account?")}{" "}
         <Link
           href="/register"
           className="text-[var(--primary)] hover:underline font-medium"
         >
-          Create one
+          {t("Create one")}
         </Link>
       </p>
 
       <p className="mt-3 text-center text-xs text-[var(--muted-foreground)]">
-        DeepTutor · Agent-Native Learning
+        {app_name} · {t("Agent-Native Learning")}
       </p>
     </div>
   );
@@ -162,7 +164,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="w-full max-w-sm text-center text-sm text-[var(--muted-foreground)]">
-          Loading sign in...
+          Loading...
         </div>
       }
     >

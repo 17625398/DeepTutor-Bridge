@@ -118,6 +118,34 @@ In short, this fork focuses on integration bridges and third-party runtime orche
 
 ### 📦 Releases
 
+> **[2026.5.19]** [v1.3.12] — Full i18n support for login and register pages with SSR hydration fix, dynamic background image for auth layouts, and `AppConfigProvider` in root layout for global config access.
+
+<details>
+<summary><b>v1.3.12 detailed changelog</b></summary>
+
+**1. Login & Register page i18n**
+
+| File | Change |
+|:---|:---|
+| [web/app/(auth)/login/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/login/page.tsx) | Replace hardcoded English text with `t()` translation calls |
+| [web/app/(auth)/register/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/register/page.tsx) | Replace hardcoded English text with `t()` translation calls |
+| [web/locales/zh/app.json](file:///d:/Doubao/DeepTutor/web/locales/zh/app.json) | Add Chinese translations for auth pages |
+
+**2. SSR hydration fix**
+
+| File | Change |
+|:---|:---|
+| [web/app/(auth)/login/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/login/page.tsx) | Add `suppressHydrationWarning` to handle server/client locale mismatch |
+| [web/app/(auth)/register/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/register/page.tsx) | Add `suppressHydrationWarning` to handle server/client locale mismatch |
+
+**3. Dynamic background image for auth pages**
+
+| File | Change |
+|:---|:---|
+| [web/app/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/layout.tsx) | Add `AppConfigProvider` to root layout for global config access |
+
+</details>
+
 > **[2026.5.18]** [v1.3.11] — Runtime-configurable application name, logo, and background image via backend API (`/api/v1/config/app`), default Chinese locale for first-time users, enhanced backup/upgrade system with forked core file tracking, and production packaging scripts for offline deployment.
 
 <details>

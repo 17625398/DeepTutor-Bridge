@@ -118,6 +118,34 @@
 
 ### 📦 版本发布
 
+> **[2026.5.19]** [v1.3.12] — 登录和注册页面完整国际化支持，修复 SSR 水合错误，认证布局动态背景图渲染，根布局添加全局配置上下文。
+
+<details>
+<summary><b>v1.3.12 详细变更说明</b></summary>
+
+**1. 登录和注册页面国际化**
+
+| 文件 | 变更内容 |
+|:---|:---|
+| [web/app/(auth)/login/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/login/page.tsx) | 将硬编码英文文本替换为 `t()` 翻译调用 |
+| [web/app/(auth)/register/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/register/page.tsx) | 将硬编码英文文本替换为 `t()` 翻译调用 |
+| [web/locales/zh/app.json](file:///d:/Doubao/DeepTutor/web/locales/zh/app.json) | 新增认证页面中文翻译 |
+
+**2. 修复 SSR 水合错误**
+
+| 文件 | 变更内容 |
+|:---|:---|
+| [web/app/(auth)/login/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/login/page.tsx) | 添加 `suppressHydrationWarning` 处理服务端/客户端语言不匹配 |
+| [web/app/(auth)/register/page.tsx](file:///d:/Doubao/DeepTutor/web/app/(auth)/register/page.tsx) | 添加 `suppressHydrationWarning` 处理服务端/客户端语言不匹配 |
+
+**3. 认证页面动态背景图**
+
+| 文件 | 变更内容 |
+|:---|:---|
+| [web/app/layout.tsx](file:///d:/Doubao/DeepTutor/web/app/layout.tsx) | 根布局添加 `AppConfigProvider`，所有页面可获取应用配置 |
+
+</details>
+
 > **[2026.5.18]** [v1.3.11] — 通过后端 API 运行时动态配置应用名称、Logo 和背景图，首次登录默认中文界面，增强备份/升级系统支持 fork 核心文件追踪，新增生产环境打包脚本支持离线部署。
 
 <details>
