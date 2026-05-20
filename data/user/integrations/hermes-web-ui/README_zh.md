@@ -307,6 +307,19 @@ node dist/server/index.js  # 手动启动
 设置 `HERMES_GATEWAY_URL` 后，Web UI 将：
 - 跳过本地 agent bridge 启动
 - 所有 API 请求代理到远程 agent
+
+### 通过 UI 切换部署模式
+
+Web UI 设置页面提供了**连接**标签页，可在运行时动态切换本地/分离部署模式：
+
+1. 打开 Web UI，进入**设置**页面
+2. 点击**连接**标签页
+3. 选择部署模式：
+   - **本地模式**：Web UI 自动启动本地 agent bridge
+   - **分离部署**：输入远程服务器地址和 API Key
+4. 点击**保存**生效
+
+> 提示：通过 `.env` 配置的远程地址会作为默认值加载，但仍可在 UI 中临时覆盖。
 - 聊天功能通过 HTTP API 直接与远程 agent 通信
 
 ---

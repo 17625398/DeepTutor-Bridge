@@ -302,6 +302,19 @@ When `HERMES_GATEWAY_URL` is set, Web UI will:
 - Proxy all API requests to remote agent
 - Chat functionality communicates directly with remote agent via HTTP API
 
+### Switch Deployment Mode via UI
+
+The Web UI Settings page provides a **Connection** tab to dynamically switch between local and separated deployment modes at runtime:
+
+1. Open Web UI, go to **Settings** page
+2. Click the **Connection** tab
+3. Select deployment mode:
+   - **Local Mode**: Web UI automatically starts local agent bridge
+   - **Separated Deployment**: Enter remote server URL and API Key
+4. Click **Save** to apply
+
+> Tip: Remote address configured via `.env` will be loaded as default, but can be temporarily overridden in the UI.
+
 ---
 
 ## Development
